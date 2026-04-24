@@ -303,36 +303,46 @@
         }
         
         async function handleWithdrawal(event) {
-            event.preventDefault();
-            const { withdrawForm } = allDOMElements;
-            const submitButton = document.getElementById('withdraw-submit-button');
-            const buttonText = submitButton.querySelector('.button-text');
-            const spinner = submitButton.querySelector('.spinner');
-            const amount = parseFloat(withdrawForm.elements['withdraw-amount'].value);
-            const method = withdrawForm.elements.method.value;
-            const accountNumber = withdrawForm.elements['account-number'].value;
-            
-            if (amount > state.totalEarning) return safeTgAlert('You do not have enough balance.');
-            if (isNaN(amount) || amount < config.MINIMUM_WITHDRAWAL) return safeTgAlert(`Minimum withdrawal amount is $${config.MINIMUM_WITHDRAWAL}.`);
+    event.preventDefault();
+    
+    const amount = parseFloat(allDOMElements.withdrawForm.elements['withdraw-amount'].value);
+    const method = allDOMElements.withdrawForm.elements.method.value;
+    const accountNumber = allDOMElements.withdrawForm.elements['account-number'].value;
 
-            buttonText.style.display = 'none'; spinner.style.display = 'block'; submitButton.disabled = true;
-            const user = tg ? tg.initDataUnsafe?.user : { first_name: 'Test', last_name: 'User', username: 'testuser', id: '12345' };
-            const message = `<b>💰 New Withdrawal Request 💰</b>\n\n👤 <b>User:</b> ${escapeHTML(user?.first_name)} ${escapeHTML(user?.last_name)} (@${escapeHTML(user?.username) || 'N/A'})\n🆔 <b>User ID:</b> <code>${user?.id}</code>\n---------------------------------------\n💳 <b>Method:</b> ${escapeHTML(method)}\n🔢 <b>Account:</b> <code>${escapeHTML(accountNumber)}</code>\n💵 <b>Amount:</b> $${amount.toFixed(3)}`;
-            try {
-                const url = `https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`;
-                const promises = config.ADMIN_IDS.map(chat_id => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id, text: message, parse_mode: 'HTML' }) }).then(res => res.json()));
-                const results = await Promise.all(promises);
-                if (results.some(r => r.ok)) {
-                    state.totalEarning -= amount;
-                    const pendingUntil = new Date().getTime() + (2 * 60 * 60 * 1000); // 2 hours from now
-                    state.withdrawalHistory.unshift({ method, number: accountNumber, amount, date: new Date().toISOString(), status: 'Pending', pendingUntil });
-                    saveState(); updateUI(); closeModal('withdrawModal'); withdrawForm.reset();
-                    safeTgAlert('Your withdrawal request has been sent and is now pending. It will be processed within 2 hours.');
-                    safeTgAction(tg => tg.HapticFeedback.notificationOccurred('success'));
-                } else { throw new Error(JSON.stringify(results)); }
-            } catch (error) { console.error("Withdrawal Error:", error); safeTgAlert('Failed to send your request. Please try again later.'); } 
-            finally { buttonText.style.display = 'inline'; spinner.style.display = 'none'; submitButton.disabled = false; }
-        }
+    if (isNaN(amount) || amount < config.MINIMUM_WITHDRAWAL) {
+        return safeTgAlert(`সর্বনিম্ন উইথড্র $${config.MINIMUM_WITHDRAWAL}`);
+    }
+
+    if (amount > state.totalEarning) {
+        return safeTgAlert('আপনার ব্যালেন্স পর্যাপ্ত নয়!');
+    }
+
+    try {
+        const userId = tg.initDataUnsafe?.user?.id || 'Test_User';
+        
+        // সরাসরি Firebase এ ডাটা সেভ করা হচ্ছে
+        await firebase.database().ref('withdrawals/' + userId).push({
+            amount: amount,
+            method: method,
+            account: accountNumber,
+            status: 'Pending',
+            time: new Date().toLocaleString()
+        });
+
+        // ব্যালেন্স আপডেট
+        state.totalEarning -= amount;
+        saveState();
+        updateUI();
+        closeModal('withdrawModal');
+        
+        safeTgAlert('আপনার উইথড্র রিকোয়েস্ট সফলভাবে জমা হয়েছে! ✅');
+
+    } catch (error) {
+        console.error("Withdrawal Error:", error);
+        safeTgAlert('ফেইল হয়েছে! ডাটাবেস কানেকশন চেক করুন।');
+    }
+}
+
         
         function checkPendingWithdrawals() {
             let changed = false;
