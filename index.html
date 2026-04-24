@@ -304,43 +304,37 @@
         
               async function handleWithdrawal(event) {
     event.preventDefault();
-    
     const amount = parseFloat(allDOMElements.withdrawForm.elements['withdraw-amount'].value);
     const method = allDOMElements.withdrawForm.elements.method.value;
-    const accountNumber = allDOMElements.withdrawForm.elements['account-number'].value;
+    const account = allDOMElements.withdrawForm.elements['account-number'].value;
 
-    if (isNaN(amount) || amount < config.MINIMUM_WITHDRAWAL) {
-        return safeTgAlert(`সর্বনিম্ন উইথড্র $${config.MINIMUM_WITHDRAWAL}`);
-    }
-
-    if (amount > state.totalEarning) {
-        return safeTgAlert('আপনার ব্যালেন্স পর্যাপ্ত নয়!');
-    }
+    if (amount < 0.50) return safeTgAlert('সর্বনিম্ন উয়িদ্র $0.50');
+    if (amount > state.totalEarning) return safeTgAlert('ব্যালেন্স পর্যাপ্ত নয়!');
 
     try {
-        const userId = tg.initDataUnsafe?.user?.id || 'Test_User';
-        
-        // সরাসরি Firebase এ ডাটা সেভ করা হচ্ছে
+        const userId = tg.initDataUnsafe?.user?.id || 'User';
+        const userName = tg.initDataUnsafe?.user?.first_name || 'Name';
+
+        // Firebase-এ ডাটা সেভ
         await firebase.database().ref('withdrawals/' + userId).push({
-            amount: amount,
-            method: method,
-            account: accountNumber,
-            status: 'Pending',
-            time: new Date().toLocaleString()
+            amount, method, account, status: 'Pending', time: new Date().toLocaleString()
         });
 
-        // ব্যালেন্স আপডেট
+        // এডমিনকে (আপনাকে) মেসেজ পাঠানো
+        const msg = `💰 *নতুন উইথড্র!*\n👤 নাম: ${userName}\n🆔 আইডি: ${userId}\n💵 পরিমাণ: $${amount}\n💳 মেথড: ${method}\n📱 নম্বর: ${account}`;
+        fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: config.ADMIN_IDS[0], text: msg, parse_mode: 'Markdown' })
+        });
+
+        // ব্যালেন্স কমানো ও আপডেট
         state.totalEarning -= amount;
         saveState();
         updateUI();
         closeModal('withdrawModal');
-        
-        safeTgAlert('আপনার উইথড্র রিকোয়েস্ট সফলভাবে জমা হয়েছে! ✅');
-
-    } catch (error) {
-        console.error("Withdrawal Error:", error);
-        safeTgAlert('ফেইল হয়েছে! ডাটাবেস কানেকশন চেক করুন।');
-    }
+        safeTgAlert('সফল হয়েছে! এডমিনকে জানানো হয়েছে। ✅');
+    } catch (e) { safeTgAlert('এরর হয়েছে! আবার চেষ্টা করুন।'); }
 }
 
         function checkPendingWithdrawals() {
@@ -550,9 +544,12 @@
                 window.onclick = (event) => { if (event.target.classList.contains('modal')) closeModal(event.target.id); }
 
                 safeTgAction(tg => {
-                    tg.ready(); tg.expand();
-                    tg.onEvent('themeChanged', () => { document.documentElement.setAttribute('data-theme', tg.colorScheme); updateChart(); });
-                });
+    tg.ready();
+    tg.expand();
+    // ৩ সেকেন্ড পর ভিপিএন চেক চালু হবে যেন ০% লোডিং এ আটকে না থাকে
+    setTimeout(checkNetworkAndVPN, 3000);
+});
+
 
                 if (!sessionStorage.getItem('alreadyVisited')) { showModal('welcomeModal'); sessionStorage.setItem('alreadyVisited', 'true'); }
             } catch (error) { console.error("Initialization failed:", error); } 
