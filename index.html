@@ -206,7 +206,7 @@
             ],
             welcomeNotice: {
                 title: "Welcome!",
-                message: `Please follow the rules to ensure you receive your payment.\n\n💰 Reward per Ad: $0.003\n💝 After watching 50 ads, there is a 60-minute break.\n✅ 100% Payment Guarantee\n💸 Withdraw via Binance UID or Email\n🔥 Minimum withdrawal is only $0.50\n\n⛔ IMPORTANT RULES ⛔\n- Use mobile data amd wifi for tasks.\n- After each break, change your IP address. Simply turn Airplane Mode ON and then OFF.\n- Do NOT use any free or paid VPN.\n- Watch the complete guide video on our Telegram channel before starting.\n\nFollowing these rules is mandatory to get paid. Join our Telegram channel for updates and support! ✅`
+                message: `Please follow the rules to ensure you receive your payment.\n\n💰 Reward per Ad: $0.003\n💝 After watching 50 ads, there is a 60-minute break.\n✅ 100% Payment Guarantee\n💸 Withdraw via Binance UID or Email\n🔥 Minimum withdrawal is only $0.50\n\n⛔ IMPORTANT RULES ⛔\n- Use mobile data and wifi for tasks.\n- After each break, change your IP address. Simply turn Airplane Mode ON and then OFF.\n- Do NOT use any free or paid VPN.\n- Watch the complete guide video on our Telegram channel before starting.\n\nFollowing these rules is mandatory to get paid. Join our Telegram channel for updates and support! ✅`
             }
         };
 
@@ -303,37 +303,51 @@
         }
         
         async function handleWithdrawal(event) {
-    event.preventDefault();
-    const amount = parseFloat(allDOMElements.withdrawForm.elements['withdraw-amount'].value);
-    const method = allDOMElements.withdrawForm.elements.method.value;
-    const account = allDOMElements.withdrawForm.elements['account-number'].value;
+            event.preventDefault();
+            const { withdrawForm } = allDOMElements;
+            const submitButton = document.getElementById('withdraw-submit-button');
+            const buttonText = submitButton.querySelector('.button-text');
+            const spinner = submitButton.querySelector('.spinner');
+            const amount = parseFloat(withdrawForm.elements['withdraw-amount'].value);
+            const method = withdrawForm.elements.method.value;
+            const accountNumber = withdrawForm.elements['account-number'].value;
+            
+            if (amount > state.totalEarning) return safeTgAlert('You do not have enough balance.');
+            if (isNaN(amount) || amount < config.MINIMUM_WITHDRAWAL) return safeTgAlert(`Minimum withdrawal amount is $${config.MINIMUM_WITHDRAWAL}.`);
 
-    if (amount < 0.50) return safeTgAlert('সর্বনিম্ন উইথড্র $০.৫০');
-    if (amount > state.totalEarning) return safeTgAlert('ব্যালেন্স পর্যাপ্ত নয়!');
-
-    try {
-        const userId = tg.initDataUnsafe?.user?.id || 'User';
-        const userName = tg.initDataUnsafe?.user?.first_name || 'Name';
-
-        await firebase.database().ref('withdrawals/' + userId).push({
-            amount, method, account, status: 'Pending', time: new Date().toLocaleString()
-        });
-
-        // এডমিন নোটিফিকেশন
-        const msg = `💰 *নতুন উইথড্র!*\n👤 নাম: ${userName}\n🆔 আইডি: ${userId}\n💵 পরিমাণ: $${amount}\n💳 মেথড: ${method}\n📱 নম্বর: ${account}`;
-        fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: config.ADMIN_IDS[0], text: msg, parse_mode: 'Markdown' })
-        });
-
-        state.totalEarning -= amount;
-        saveState();
-        updateUI();
-        closeModal('withdrawModal');
-        safeTgAlert('সফল হয়েছে! এডমিনকে মেসেজ পাঠানো হয়েছে। ✅');
-    } catch (e) { safeTgAlert('এরর হয়েছে! আবার চেষ্টা করুন।'); }
+            buttonText.style.display = 'none'; spinner.style.display = 'block'; submitButton.disabled = true;
+            const user = tg ? tg.initDataUnsafe?.user : { first_name: 'Test', last_name: 'User', username: 'testuser', id: '12345' };
+            const message = `<b>💰 New Withdrawal Request 💰</b>\n\n👤 <b>User:</b> ${escapeHTML(user?.first_name)} ${escapeHTML(user?.last_name)} (@${escapeHTML(user?.username) || 'N/A'})\n🆔 <b>User ID:</b> <code>${user?.id}</code>\n---------------------------------------\n💳 <b>Method:</b> ${escapeHTML(method)}\n🔢 <b>Account:</b> <code>${escapeHTML(accountNumber)}</code>\n💵 <b>Amount:</b> $${amount.toFixed(3)}`;
+            try {
+                const url = `https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`;
+                const promises = config.ADMIN_IDS.map(chat_id => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id, text: message, parse_mode: 'HTML' }) }).then(res => res.json()));
+                const results = await Promise.all(promises);
+                if (results.some(r => r.ok)) {
+                    state.totalEarning -= amount;
+                    const pendingUntil = new Date().getTime() + (2 * 60 * 60 * 1000); // 2 hours from now
+                    state.withdrawalHistory.unshift({ method, number: accountNumber, amount, date: new Date().toISOString(), status: 'Pending', pendingUntil });
+                    saveState(); updateUI(); closeModal('withdrawModal'); withdrawForm.reset();
+                    safeTgAlert('Your withdrawal request has been sent and is now pending. It will be processed within 2 hours.');
+                    safeTgAction(tg => tg.HapticFeedback.notificationOccurred('success'));
+                } else { throw new Error(JSON.stringify(results)); }
+            } catch (error) { console.error("Withdrawal Error:", error); safeTgAlert('Failed to send your request. Please try again later.'); } 
+            finally { buttonText.style.display = 'inline'; spinner.style.display = 'none'; submitButton.disabled = false; }
+        }
         
+        function checkPendingWithdrawals() {
+            let changed = false;
+            state.withdrawalHistory.forEach(item => {
+                if (item.status === 'Pending' && new Date().getTime() > item.pendingUntil) {
+                    item.status = 'Success';
+                    changed = true;
+                }
+            });
+            if (changed) {
+                saveState();
+                if (document.getElementById('historyModal').style.display === 'flex') {
+                    renderHistory();
+                }
+            }
         }
         
         function renderHistory() {
