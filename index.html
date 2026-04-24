@@ -181,7 +181,7 @@
             MONETAG_ZONE_ID: '10904278',
             AD_REWARD: 0.0018,
             DAILY_AD_LIMIT: 50,
-            MINIMUM_WITHDRAWAL: 0.5,
+            MINIMUM_WITHDRAWAL: 0.50,
             COOLDOWN_MINUTES: 60,
             // নতুন: উইথড্র মেথডগুলো এখানে যোগ করা হয়েছে
             withdrawalMethods: [
@@ -190,27 +190,25 @@
                 'Nogad'
             ],
             firebase: {
-                apiKey: "AIzaSyAW7q7L9xKvLP36bB7oYHqZy5Ou-7q0S68",
+               apiKey: "AIzaSyAW7q7L9xKvLP36bB7oYHqZy5Ou-7q0S68",
   authDomain: "fir-90b18.firebaseapp.com",
   databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com",
   projectId: "fir-90b18",
   storageBucket: "fir-90b18.firebasestorage.app",
   messagingSenderId: "503462119250",
   appId: "1:503462119250:web:42a45758449b5188835c8b",
-  measurementId: "G-Q8X0DTJC5Z"
+  measurementId: "G-Q8X0DTJC5Z" 
             },
-            REFERRAL_REWARD: 0.02,
+            REFERRAL_REWARD: 0.01,
             bonusTasks: [
-                { id: 'bonus_01', title: 'আমাদের চ্যানেল ভিজিট করুন', link: 'https://t.me/trustedbdincome1', reward: 0.03, duration: 10 },
-                { id: 'bonus_02', title: 'অন্য অ্যাপটি দেখুন', link: 'https://t.me/+Yzmy6WpJSWVmOWI1', reward: 0.02, duration: 10 }
+                { id: 'bonus_01', title: 'আমাদের চ্যানেল ভিজিট করুন', link: 'https://t.me/BasicTouchPro', reward: 0.5, duration: 10 },
+                { id: 'bonus_02', title: 'অন্য অ্যাপটি দেখুন', link: 'https://t.me/BasicTouchProBot', reward: 0.01, duration: 10 }
             ],
-                                welcomeNotice: {
+            welcomeNotice: {
                 title: "Welcome!",
                 message: `Please follow the rules to ensure you receive your payment.\n\n💰 Reward per Ad: $0.0018\n💝 After watching 50 ads, there is a 60-minute break.\n✅ 100% Payment Guarantee\n💸 Withdraw via Binance UID or Email\n🔥 Minimum withdrawal is only $0.50\n\n⛔ IMPORTANT RULES ⛔\n- Use mobile data and wifi for tasks.\n- After each break, change your IP address. Simply turn Airplane Mode ON and then OFF.\n- Do NOT use any free or paid VPN.\n- Watch the complete guide video on our Telegram channel before starting.\n\nFollowing these rules is mandatory to get paid. Join our Telegram channel for updates and support! ✅`
-            } 
-        }
-
-    };
+            }
+        };
 
         // --- MAIN APP LOGIC ---
         const tg = window.Telegram ? window.Telegram.WebApp : null;
@@ -220,13 +218,8 @@
         let currentIpAddress = null;
         let firebaseApp, firebaseDb;
 
-        function initDB() { return new Promise((resolve) => { try { const request = indexedDB.open(dbName, 3); request.onerror = (e) => { console.error("DB Error:", e); resolve(); }; request.onsuccess = event => { db = event.target.result; resolve(); }; request.onupgradeneeded = event => { let db = event.target.result; if (!db.objectStoreNames.contains('userState')) db.createObjectStore('userState', { keyPath: 'id' }); if (!db.objectStoreNames.contains('appUsage')) db.createObjectStore('appUsage', { keyPath: 'ip' }); }; } catch (e) { resolve(); } }); }
-        function saveState() { if (!db) return; const transaction = db.transaction(['userState'], 'readwrite'); transaction.objectStore('userState').put({ id: 'currentUser', ...state }); }
-        function loadState() { return new Promise(resolve => { if (!db) { resolve(); return; } const request = db.transaction(['userState'], 'readonly').objectStore('userState').get('currentUser'); request.onsuccess = () => { if (request.result) { state = { ...state, ...request.result }; if (!state.completedBonusTasks) state.completedBonusTasks = []; if (!state.rewardedReferrals) state.rewardedReferrals = 0; if(!state.originalUserId) state.originalUserId = null; } const today = new Date().toLocaleDateString(); if (state.lastAdWatchedDate !== today) { state.adsWatchedToday = 0; state.lastAdWatchedDate = today; } resolve(); }; request.onerror = () => resolve(); }); }
-        function checkIpInDB(ip) { return new Promise(resolve => { if(!db || !ip) return resolve(false); const request = db.transaction(['appUsage'], 'readonly').objectStore('appUsage').get(ip); request.onsuccess = () => resolve(!!request.result); request.onerror = () => resolve(false); }); }
-        function saveIpToDB(ip) { if(!db || !ip) return; const transaction = db.transaction(['appUsage'], 'readwrite'); transaction.objectStore('appUsage').put({ ip: ip, timestamp: new Date().toISOString() }); }
         const allDOMElements = { 
-           preloader: document.getElementById('preloader'), preloaderPercentage: document.getElementById('preloader-percentage'), preloaderFooter: document.getElementById('preloader-footer'),
+            preloader: document.getElementById('preloader'), preloaderPercentage: document.getElementById('preloader-percentage'), preloaderFooter: document.getElementById('preloader-footer'),
             container: document.querySelector('.container'), totalEarningEl: document.getElementById('total-earning'), adCountEl: document.getElementById('ad-count'), 
             adsTodayCountEl: document.getElementById('ads-today-count'), referralCountEl: document.getElementById('referral-count'), watchAdButton: document.getElementById('watch-ad-button'), 
             withdrawForm: document.getElementById('withdraw-form'), adLoaderOverlay: document.getElementById('ad-loader-overlay'), profilePicEl: document.getElementById('profile-pic'), 
@@ -235,6 +228,12 @@
             bonusTasksListEl: document.getElementById('bonus-tasks-list'), minWithdrawText: document.getElementById('min-withdraw-text'),
             welcomeTitle: document.getElementById('welcome-title'), welcomeMessage: document.getElementById('welcome-message')
         };
+        
+        function initDB() { return new Promise((resolve) => { try { const request = indexedDB.open(dbName, 3); request.onerror = (e) => { console.error("DB Error:", e); resolve(); }; request.onsuccess = event => { db = event.target.result; resolve(); }; request.onupgradeneeded = event => { let db = event.target.result; if (!db.objectStoreNames.contains('userState')) db.createObjectStore('userState', { keyPath: 'id' }); if (!db.objectStoreNames.contains('appUsage')) db.createObjectStore('appUsage', { keyPath: 'ip' }); }; } catch (e) { resolve(); } }); }
+        function saveState() { if (!db) return; const transaction = db.transaction(['userState'], 'readwrite'); transaction.objectStore('userState').put({ id: 'currentUser', ...state }); }
+        function loadState() { return new Promise(resolve => { if (!db) { resolve(); return; } const request = db.transaction(['userState'], 'readonly').objectStore('userState').get('currentUser'); request.onsuccess = () => { if (request.result) { state = { ...state, ...request.result }; if (!state.completedBonusTasks) state.completedBonusTasks = []; if (!state.rewardedReferrals) state.rewardedReferrals = 0; if(!state.originalUserId) state.originalUserId = null; } const today = new Date().toLocaleDateString(); if (state.lastAdWatchedDate !== today) { state.adsWatchedToday = 0; state.lastAdWatchedDate = today; } resolve(); }; request.onerror = () => resolve(); }); }
+        function checkIpInDB(ip) { return new Promise(resolve => { if(!db || !ip) return resolve(false); const request = db.transaction(['appUsage'], 'readonly').objectStore('appUsage').get(ip); request.onsuccess = () => resolve(!!request.result); request.onerror = () => resolve(false); }); }
+        function saveIpToDB(ip) { if(!db || !ip) return; const transaction = db.transaction(['appUsage'], 'readwrite'); transaction.objectStore('appUsage').put({ ip: ip, timestamp: new Date().toISOString() }); }
 
         async function getIpAddress() { try { const response = await fetch('https://api.ipify.org?format=json'); const data = await response.json(); return data.ip; } catch (error) { console.error("Could not fetch IP address.", error); return null; } }
         function safeTgAction(action, fallback = () => {}) { if (tg && tg.initData) { action(tg); } else { fallback(); console.log("Telegram WebApp is not available or not ready."); } }
@@ -303,7 +302,7 @@
             .finally(() => { allDOMElements.adLoaderOverlay.style.display = 'none'; });
         }
         
-        async function handleWithdrawal(event) {
+              async function handleWithdrawal(event) {
     event.preventDefault();
     
     const amount = parseFloat(allDOMElements.withdrawForm.elements['withdraw-amount'].value);
@@ -344,7 +343,6 @@
     }
 }
 
-        
         function checkPendingWithdrawals() {
             let changed = false;
             state.withdrawalHistory.forEach(item => {
