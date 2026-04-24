@@ -510,12 +510,7 @@
                     }
                 }
 
-                currentIpAddress = await getIpAddress();
-                const isMultiAccountIP = await checkIpInDB(currentIpAddress);
-                const isNewUser = !(localStorage.getItem('userIdentified'));
-
-                if (isMultiAccountIP && isNewUser) { document.getElementById('multiAccountModal').style.display = 'flex'; return; }
-                if (!isMultiAccountIP) { saveIpToDB(currentIpAddress); localStorage.setItem('userIdentified', 'true'); }
+                
                 
                 await handleReferral();
                 await processReferralRewards();
