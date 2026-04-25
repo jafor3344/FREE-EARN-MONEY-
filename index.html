@@ -73,6 +73,7 @@
             </div>
         </div>
         <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-circle-play"></i> START EARNING</button>
+        <button id="admin-entry-btn" class="btn-main" style="margin-top: 10px; background: #333; display: none;" onclick="showSection('admin')"><i class="fa-solid fa-user-shield"></i> ADMIN PANEL</button>
     </div>
 </div>
 
@@ -81,12 +82,12 @@
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-check-double"></i> Social Tasks</div>
         <div class="task-item">
-            <div><b>Join Channel</b><br><small>Get Updates</small></div>
-            <button class="btn-check" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join</button>
+            <div><b>Join Channel</b><br><small>Reward: $0.03</small></div>
+            <button class="btn-check" onclick="doTask('channel', 0.03, 'https://t.me/trustedbdincome1')">Check</button>
         </div>
         <div class="task-item">
-            <div><b>Join Group</b><br><small>Support Group</small></div>
-            <button class="btn-check" onclick="tg.openTelegramLink('https://t.me/+Yzmy6WpJSWVmOWI1')">Join</button>
+            <div><b>Join Group</b><br><small>Reward: $0.02</small></div>
+            <button class="btn-check" onclick="doTask('group', 0.02, 'https://t.me/trustedbdincome1')">Check</button>
         </div>
     </div>
     <div class="card">
@@ -122,6 +123,16 @@
     </div>
 </div>
 
+<div id="section-admin" style="display:none;" class="container">
+    <br>
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-user-shield"></i> Admin Control</div>
+        <input type="text" id="admin-target-uid" class="withdraw-input" placeholder="User UID (টেলিগ্রাম আইডি)">
+        <input type="number" id="admin-target-amt" class="withdraw-input" placeholder="Amount to add (e.g. 1.50)">
+        <button class="btn-main" onclick="adminAddBalance()">Update User Balance</button>
+    </div>
+</div>
+
 <nav class="nav-bar">
     <button class="nav-item active" onclick="showSection('home', this)"><i class="fa-solid fa-house"></i>Home</button>
     <button class="nav-item" onclick="showSection('task', this)"><i class="fa-solid fa-list-check"></i>Task</button>
@@ -145,6 +156,9 @@
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
+    
+    // আপনার আইডি এখানে অ্যাডমিন হিসেবে সেট করা হলো
+    const adminId = 6717490662; 
 
     let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], tasks: {} };
     let incomeChart = null;
@@ -157,6 +171,11 @@
             document.getElementById('u-pic').src = user.photo_url;
         } else {
             document.getElementById('u-pic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007AFF&color=fff`;
+        }
+
+        // অ্যাডমিন চেক
+        if(uid == adminId) {
+            document.getElementById('admin-entry-btn').style.display = 'block';
         }
 
         db.ref('users/' + uid).on('value', (snap) => {
@@ -173,8 +192,8 @@
     }
 
     function watchAd() {
-        const adLink = "https://omg10.com/4/10924120";
-        tg.openLink(adLink);
+        const adLink = "https://omg10.com/4/10924120"; 
+        tg.openLink(adLink); 
 
         const loader = document.getElementById('ad-loader');
         const timer = document.getElementById('ad-timer');
@@ -194,7 +213,10 @@
     }
 
     function showSection(id, el) {
-        ['home', 'task', 'refer', 'wallet'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
+        ['home', 'task', 'refer', 'wallet', 'admin'].forEach(s => {
+            const element = document.getElementById('section-' + s);
+            if(element) element.style.display = 'none';
+        });
         document.getElementById('section-' + id).style.display = 'block';
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(el) el.classList.add('active');
@@ -210,8 +232,38 @@
         tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
     }
 
-    // doTask ফাংশনটি এখন আর সোশ্যাল টাস্কের জন্য ব্যবহার হচ্ছে না, তাই এটি শুধু রেখে দেওয়া হলো কিন্তু বোনাস লজিক নেই।
-    
+    function doTask(type, reward, link) {
+        tg.openTelegramLink(link);
+        setTimeout(() => {
+            if(confirm("Confirm: Did you join?")) {
+                state.totalEarning += reward;
+                db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+                tg.showAlert("Bonus Added!");
+            }
+        }, 2000);
+    }
+
+    // অ্যাডমিন টাকা অ্যাড করার ফাংশন
+    function adminAddBalance() {
+        if(uid != adminId) return tg.showAlert("Unauthorized access!");
+        const target = document.getElementById('admin-target-uid').value;
+        const amt = parseFloat(document.getElementById('admin-target-amt').value);
+        
+        if(!target || isNaN(amt)) return tg.showAlert("Please enter valid UID and Amount!");
+
+        db.ref('users/' + target).once('value').then(snap => {
+            const data = snap.val();
+            if(data) {
+                let newBal = (data.totalEarning || 0) + amt;
+                db.ref('users/' + target).update({ totalEarning: newBal });
+                tg.showAlert("Successfully added $" + amt + " to User " + target);
+                document.getElementById('admin-target-amt').value = '';
+            } else {
+                tg.showAlert("User not found in database!");
+            }
+        });
+    }
+
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
         if(incomeChart) incomeChart.destroy();
