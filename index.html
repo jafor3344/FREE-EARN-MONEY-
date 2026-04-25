@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AdCash Pro - Pro Version</title>
+    <title>AdCash Pro</title>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -11,75 +12,69 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* UI */
-        :root { --primary: #007AFF; --card: #ffffff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f4f7fb; margin: 0; padding-bottom: 90px; }
+        :root { --primary-color: #007AFF; --card-bg: #FFFFFF; }
+        body { font-family: sans-serif; background: #F0F2F5; margin: 0; padding-bottom: 80px; }
         .container { max-width: 500px; margin: 0 auto; padding: 15px; }
-        .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .balance-card { background: linear-gradient(135deg, #007AFF, #00C6FF); color: white; text-align: center; padding: 30px; }
-        .balance-card h1 { font-size: 40px; margin: 10px 0; }
-        .stats-row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-        .stat-box { flex: 1; background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-        .stat-box b { display: block; font-size: 18px; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; border-radius: 16px; font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; }
-        .nav-item { border: none; background: none; color: #888; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 2000; }
-        .modal-content { background: white; width: 85%; padding: 25px; border-radius: 24px; text-align: center; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; }
+        .balance-card { background: linear-gradient(135deg, #007AFF, #0056B3); color: white; padding: 25px; border-radius: 20px; text-align: center; margin-bottom: 15px; }
+        .balance-amount { font-size: 38px; font-weight: 800; margin: 5px 0; }
+        .income-stats-box { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
+        .chart-container { height: 180px; width: 100%; }
+        .btn-action { background: var(--primary-color); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
+        .nav-item { border: none; background: none; color: #888; font-size: 11px; display: flex; flex-direction: column; align-items: center; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 24px; text-align: center; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        #adLimitText { font-size: 14px; color: #666; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card balance-card">
-        <small>Total Balance</small>
-        <h1 id="totalEarning">$0.000</h1>
+    <div class="balance-card">
+        <small>Available Balance</small>
+        <div class="balance-amount" id="totalEarning">$0.000</div>
     </div>
 
-    <div class="stats-row">
-        <div class="stat-box"><b id="adCount">0</b><small>Ads Watched</small></div>
-        <div class="stat-box"><b id="dailyAds">0/50</b><small>Today's Task</small></div>
-        <div class="stat-box"><b id="referrals">0</b><small>Referrals</small></div>
-    </div>
-
-    <div class="card">
+    <div class="income-stats-box">
         <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
             <b>Income Stats (7D)</b>
-            <i class="fa-solid fa-chart-line" style="color:var(--primary)"></i>
+            <i class="fa-solid fa-chart-line" style="color:var(--primary-color)"></i>
         </div>
-        <canvas id="incomeChart" style="max-height: 160px;"></canvas>
+        <div class="chart-container">
+            <canvas id="incomeChart"></canvas>
+        </div>
     </div>
 
-    <button class="btn-main" onclick="showInterstitialAd()"><i class="fa-solid fa-play"></i> Watch 15s Ad</button>
+    <span id="adLimitText">Daily Ads: <span id="dailyCount">0</span>/50</span>
+    <button class="btn-action" id="adBtn" onclick="watchAd()"><i class="fa-solid fa-play-circle"></i> Watch 15s Ad</button>
 </div>
 
 <nav class="nav-bar">
     <button class="nav-item" onclick="openModal('withdrawModal')"><i class="fa-solid fa-wallet"></i>Withdraw</button>
-    <button class="nav-item" onclick="alert('Coming soon')"><i class="fa-solid fa-history"></i>History</button>
+    <button class="nav-item" onclick="alert('No history found!')"><i class="fa-solid fa-history"></i>History</button>
     <button class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</button>
-    <button class="nav-item" onclick="showBonus()"><i class="fa-solid fa-gift"></i>Bonus</button>
+    <button class="nav-item" onclick="showBonusTasks()"><i class="fa-solid fa-gift"></i>Bonus</button>
     <button class="nav-item" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')"><i class="fa-solid fa-headset"></i>Support</button>
 </nav>
 
 <div id="withdrawModal" class="modal">
     <div class="modal-content">
-        <h3>Withdraw Funds</h3>
-        <p style="font-size:12px; color:red">Minimum withdrawal $0.50</p>
+        <h3 style="margin-top:0">Withdraw</h3>
+        <p style="font-size:13px; color:#666">Minimum $0.50 Required</p>
         <select id="method">
+            <option value="Binance UID">Binance UID</option>
             <option value="Bkash">Bkash</option>
             <option value="Nagad">Nagad</option>
-            <option value="Binance">Binance UID</option>
         </select>
-        <input type="text" id="wallet" placeholder="Wallet Number/UID">
+        <input type="text" id="wallet" placeholder="Wallet Number / Binance UID">
         <input type="number" id="amount" step="0.01" placeholder="Amount (min 0.50)">
-        <button class="btn-main" onclick="handleWithdraw()">Submit Request</button>
-        <button onclick="closeModal('withdrawModal')" style="border:none; background:none; color:red; margin-top:15px">Cancel</button>
+        <button class="btn-action" onclick="handleWithdraw()">Submit Request</button>
+        <button onclick="closeModal('withdrawModal')" style="width:100%; border:none; background:none; color:red; margin-top:10px">Cancel</button>
     </div>
 </div>
 
 <script>
-    // Config
     const config = {
         token: '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw',
         admin: '6717490662',
@@ -89,14 +84,15 @@
     firebase.initializeApp(config.fb);
     const db = firebase.database();
     const tg = window.Telegram.WebApp;
-    const uid = tg.initDataUnsafe?.user?.id || "DevUser";
+    const uid = tg.initDataUnsafe?.user?.id || "Dev_User";
 
-    let state = { totalEarning: 0, adCount: 0, dailyAds: 0, referrals: 0, weekly: [0,0,0,0,0,0,0] };
+    let state = { totalEarning: 0, weekly: [0,0,0,0,0,0,0], dailyAds: 0, lastAdDate: "" };
 
     function init() {
         db.ref('users/' + uid).on('value', (snap) => {
             if(snap.exists()) {
                 state = snap.val();
+                checkDayReset();
                 renderUI();
             } else {
                 db.ref('users/' + uid).set(state);
@@ -104,59 +100,66 @@
         });
     }
 
+    function checkDayReset() {
+        const today = new Date().toLocaleDateString();
+        if (state.lastAdDate !== today) {
+            state.dailyAds = 0;
+            state.lastAdDate = today;
+            db.ref('users/' + uid).update({ dailyAds: 0, lastAdDate: today });
+        }
+    }
+
     function renderUI() {
-        document.getElementById('totalEarning').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
-        document.getElementById('adCount').innerText = state.adCount || 0;
-        document.getElementById('dailyAds').innerText = `${state.dailyAds || 0}/50`;
-        document.getElementById('referrals').innerText = state.referrals || 0;
+        document.getElementById('totalEarning').innerText = `$${state.totalEarning.toFixed(3)}`;
+        document.getElementById('dailyCount').innerText = state.dailyAds || 0;
         renderChart();
     }
 
     // Monetag 15s Interstitial Ad Logic
-    function showInterstitialAd() {
-        if(state.dailyAds >= 50) return alert("Daily limit reached!");
-        
-        // Monetag Interstitial Script Check
+    async function watchAd() {
+        if (state.dailyAds >= 50) {
+            alert("আপনার আজকের ৫০টি অ্যাড দেখার লিমিট শেষ!");
+            return;
+        }
+
+        // Monetag Interstitial Call
         if (typeof show_10904278 === 'function') {
             show_10904278().then(() => {
-                rewardUser();
-            }).catch(() => {
-                alert("Ad failed to load. Please try again.");
+                // অ্যাড সফলভাবে দেখা হলে রিওয়ার্ড যোগ হবে
+                addReward(0.003);
+            }).catch(err => {
+                alert("অ্যাড লোড হতে সমস্যা হচ্ছে, আবার চেষ্টা করুন।");
             });
         } else {
-            // Testing reward (যদি স্ক্রিপ্ট ব্লক থাকে)
-            rewardUser();
-            alert("Test Ad Success! $0.003 added.");
+            // Fallback for testing
+            addReward(0.003);
+            alert("Ad Success! $0.003 যোগ করা হয়েছে।");
         }
     }
 
-    function rewardUser() {
-        state.totalEarning += 0.003;
-        state.adCount += 1;
+    function addReward(amt) {
+        state.totalEarning += amt;
         state.dailyAds += 1;
         const day = new Date().getDay();
         if(!state.weekly) state.weekly = [0,0,0,0,0,0,0];
-        state.weekly[day] += 0.003;
+        state.weekly[day] += amt;
         db.ref('users/' + uid).update(state);
     }
 
-    // Withdraw
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
+        const meth = document.getElementById('method').value;
+        const wal = document.getElementById('wallet').value;
         if(amt < 0.50) return alert("সর্বনিম্ন উইথড্র $0.50");
         if(amt > state.totalEarning) return alert("ব্যালেন্স পর্যাপ্ত নয়!");
-
         state.totalEarning -= amt;
         db.ref('users/' + uid).update(state);
-        
-        const msg = `Withdraw Request!\nUser: ${uid}\nAmount: $${amt}\nWallet: ${document.getElementById('wallet').value}`;
+        const msg = `Withdraw Success!\nUser: ${uid}\nMethod: ${meth}\nAmount: $${amt}\nWallet: ${wal}`;
         fetch(`https://api.telegram.org/bot${config.token}/sendMessage?chat_id=${config.admin}&text=${encodeURIComponent(msg)}`);
-        
-        alert("উইথড্র রিকোয়েস্ট সাকসেসফুল!");
+        alert("পেমেন্ট উইথড্র রিকোয়েস্ট সাকসেস ফুল!");
         closeModal('withdrawModal');
     }
 
-    // Graph
     let myChart;
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
@@ -164,25 +167,25 @@
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                 datasets: [{
                     data: state.weekly || [0,0,0,0,0,0,0],
-                    backgroundColor: '#007AFF', borderRadius: 5
+                    backgroundColor: '#5E5CE6',
+                    borderRadius: 6
                 }]
             },
-            options: { responsive: true, plugins: { legend: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
-    }
-
-    function showBonus() {
-        tg.openTelegramLink('https://t.me/trustedbdincome1');
-        rewardUser(); // Joining reward
     }
 
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
         navigator.clipboard.writeText(link);
         alert("Referral link copied!");
+    }
+
+    function showBonusTasks() {
+        tg.openTelegramLink('https://t.me/trustedbdincome1');
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
