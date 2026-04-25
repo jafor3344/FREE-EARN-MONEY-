@@ -42,6 +42,9 @@
         .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; border: none; background: none; }
         .nav-item.active { color: var(--primary); }
         .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
+        
+        /* Admin Styles */
+        .admin-item { background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #eee; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -73,7 +76,7 @@
             </div>
         </div>
         <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-circle-play"></i> START EARNING</button>
-        <button id="admin-entry-btn" class="btn-main" style="margin-top: 10px; background: #333; display: none;" onclick="showSection('admin')"><i class="fa-solid fa-user-shield"></i> ADMIN PANEL</button>
+        <button id="admin-btn" class="btn-main" style="display:none; margin-top: 10px; background: #333;" onclick="showSection('admin')">ADMIN PANEL</button>
     </div>
 </div>
 
@@ -125,11 +128,19 @@
 
 <div id="section-admin" style="display:none;" class="container">
     <br>
+    <div class="card" style="border: 2px solid #333;">
+        <div class="card-title">Platform Stats</div>
+        <p>Total Users: <b id="stat-total-users">0</b></p>
+    </div>
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-user-shield"></i> Admin Control</div>
-        <input type="text" id="admin-target-uid" class="withdraw-input" placeholder="User UID (টেলিগ্রাম আইডি)">
-        <input type="number" id="admin-target-amt" class="withdraw-input" placeholder="Amount to add (e.g. 1.50)">
-        <button class="btn-main" onclick="adminAddBalance()">Update User Balance</button>
+        <div class="card-title">Add Money to User</div>
+        <input type="text" id="adm-uid" class="withdraw-input" placeholder="User ID">
+        <input type="number" id="adm-amt" class="withdraw-input" placeholder="Amount">
+        <button class="btn-main" onclick="adminAddBalance()">Add Balance</button>
+    </div>
+    <div class="card">
+        <div class="card-title">Pending Withdrawals</div>
+        <div id="admin-w-list">Loading...</div>
     </div>
 </div>
 
@@ -156,9 +167,7 @@
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
-    
-    // আপনার আইডি এখানে অ্যাডমিন হিসেবে সেট করা হলো
-    const adminId = 6717490662; 
+    const adminId = 6717490662; // আপনার আইডি
 
     let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], tasks: {} };
     let incomeChart = null;
@@ -173,9 +182,9 @@
             document.getElementById('u-pic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007AFF&color=fff`;
         }
 
-        // অ্যাডমিন চেক
         if(uid == adminId) {
-            document.getElementById('admin-entry-btn').style.display = 'block';
+            document.getElementById('admin-btn').style.display = 'block';
+            loadAdminData();
         }
 
         db.ref('users/' + uid).on('value', (snap) => {
@@ -186,8 +195,27 @@
                 document.getElementById('ref-count-display').innerText = state.referrals || 0;
                 renderChart();
             } else {
+                db.ref('users/' + uid).set(state); // New user registration
                 renderChart();
             }
+        });
+    }
+
+    function loadAdminData() {
+        db.ref('users').on('value', (snap) => {
+            document.getElementById('stat-total-users').innerText = snap.numChildren();
+        });
+        db.ref('withdrawals').on('value', (snap) => {
+            const list = document.getElementById('admin-w-list');
+            list.innerHTML = '';
+            snap.forEach(child => {
+                const w = child.val();
+                list.innerHTML += `<div class="admin-item">
+                    <b>User:</b> ${w.userId} | <b>Amt:</b> $${w.amount}<br>
+                    <b>Method:</b> ${w.method} | <b>Acc:</b> ${w.wallet}<br>
+                    <small>${w.time}</small>
+                </div>`;
+            });
         });
     }
 
@@ -225,11 +253,41 @@
 
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
+        const meth = document.getElementById('method').value;
+        const addr = document.getElementById('wallet-addr').value;
+
         if(amt < 0.50 || isNaN(amt)) return tg.showAlert("ভুল অ্যামাউন্ট! সর্বনিম্ন $0.50");
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
+        if(!addr) return tg.showAlert("Wallet address দিন!");
+
         state.totalEarning -= amt;
         db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+        
+        db.ref('withdrawals').push({
+            userId: uid,
+            amount: amt,
+            method: meth,
+            wallet: addr,
+            time: new Date().toLocaleString()
+        });
+        
         tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
+    }
+
+    function adminAddBalance() {
+        const target = document.getElementById('adm-uid').value;
+        const val = parseFloat(document.getElementById('adm-amt').value);
+        if(!target || isNaN(val)) return tg.showAlert("Invalid Input");
+        
+        db.ref('users/' + target).once('value').then(snap => {
+            if(snap.exists()){
+                let newBal = (snap.val().totalEarning || 0) + val;
+                db.ref('users/' + target).update({totalEarning: newBal});
+                tg.showAlert("Balance Updated!");
+            } else {
+                tg.showAlert("User not found!");
+            }
+        });
     }
 
     function doTask(type, reward, link) {
@@ -241,27 +299,6 @@
                 tg.showAlert("Bonus Added!");
             }
         }, 2000);
-    }
-
-    // অ্যাডমিন টাকা অ্যাড করার ফাংশন
-    function adminAddBalance() {
-        if(uid != adminId) return tg.showAlert("Unauthorized access!");
-        const target = document.getElementById('admin-target-uid').value;
-        const amt = parseFloat(document.getElementById('admin-target-amt').value);
-        
-        if(!target || isNaN(amt)) return tg.showAlert("Please enter valid UID and Amount!");
-
-        db.ref('users/' + target).once('value').then(snap => {
-            const data = snap.val();
-            if(data) {
-                let newBal = (data.totalEarning || 0) + amt;
-                db.ref('users/' + target).update({ totalEarning: newBal });
-                tg.showAlert("Successfully added $" + amt + " to User " + target);
-                document.getElementById('admin-target-amt').value = '';
-            } else {
-                tg.showAlert("User not found in database!");
-            }
-        });
     }
 
     function renderChart() {
