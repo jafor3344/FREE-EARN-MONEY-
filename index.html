@@ -525,7 +525,32 @@
                     else { allDOMElements.profilePicEl.innerHTML = `<span>${escapeHTML(user.first_name.charAt(0))}</span>`; }
                 }
                 
-                updateUI();
+                // Firebase থেকে সরাসরি ব্যালেন্স এবং ডাটা লোড করা
+const userId = tg.initDataUnsafe?.user?.id;
+if (userId) {
+    firebase.database().ref('users/' + userId).once('value').then((snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            // ডাটাবেসের ভ্যালুগুলো অ্যাপের স্টেটে বসানো হচ্ছে
+            state.totalEarning = parseFloat(data.totalEarning) || 0;
+            state.adCount = parseInt(data.adCount) || 0;
+            state.adsWatchedToday = parseInt(data.adsWatchedToday) || 0;
+            state.referrals = parseInt(data.referrals) || 0;
+            
+            // ডাটা পাওয়ার পর স্ক্রিন আপডেট করা
+            updateUI();
+        } else {
+            // যদি ডাটাবেসে তথ্য না থাকে (নতুন ইউজার)
+            updateUI();
+        }
+    }).catch((error) => {
+        console.error("Firebase Load Error:", error);
+        updateUI();
+    });
+} else {
+    updateUI();
+}
+                
                 
                 allDOMElements.watchAdButton.addEventListener('click', watchAd);
                 allDOMElements.withdrawForm.addEventListener('submit', handleWithdrawal);
