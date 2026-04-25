@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AdCash Pro - Payment Edition</title>
+    <title>AdCash Pro - Elite</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -12,95 +12,121 @@
 
     <style>
         :root { --primary: #007AFF; --bg: #F2F4F7; --card: #FFFFFF; --text: #1C1C1E; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: var(--text); }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
         
         /* প্রোফাইল হেডার */
-        .profile-card { display: flex; align-items: center; gap: 15px; padding: 20px; background: var(--card); border-radius: 0 0 25px 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .user-avatar { width: 55px; height: 55px; border-radius: 50%; border: 3px solid var(--primary); background: #eee; }
-        .user-meta h2 { margin: 0; font-size: 18px; }
-        .user-meta span { font-size: 12px; color: #4CAF50; font-weight: bold; }
+        .profile-header { display: flex; align-items: center; gap: 15px; padding: 20px; background: var(--card); margin-bottom: 1px; border-radius: 0 0 20px 20px; }
+        .user-pic { width: 50px; height: 50px; border-radius: 50%; background: #ddd; object-fit: cover; border: 2px solid var(--primary); }
+        .user-info-text { display: flex; flex-direction: column; }
+        .user-name { font-weight: 800; font-size: 18px; color: var(--text); }
+        .user-status { font-size: 12px; color: #4CAF50; font-weight: bold; }
 
-        .balance-box { background: linear-gradient(135deg, #007AFF, #0056B3); color: white; padding: 30px 20px; border-radius: 20px; text-align: center; margin: 15px; }
-        .balance-val { font-size: 40px; font-weight: 800; margin-top: 5px; }
-
+        .header-balance { background: var(--primary); color: white; padding: 25px 20px; border-radius: 20px; text-align: center; margin: 15px; }
+        .balance-title { font-size: 13px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
+        .balance-val { font-size: 38px; font-weight: 800; margin: 5px 0; }
+        
         .container { padding: 0 15px; }
-        .card { background: var(--card); padding: 20px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .card-title { font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; border: 1px solid #eee; }
+        .btn-check { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        
+        .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
 
-        /* উইথড্র ইনপুট স্টাইল */
-        .w-select, .w-input { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 12px; border: 1px solid #ddd; font-size: 15px; box-sizing: border-box; }
-        .btn-pay { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-weight: 700; font-size: 16px; cursor: pointer; }
+        /* অ্যাড লোডার ওভারলে */
+        #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 1000; }
-        .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; background: none; border: none; }
+        .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; border: none; background: none; }
         .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
-        
-        #ad-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
-<div id="ad-overlay">
-    <div class="fas fa-spinner fa-spin fa-3x"></div>
-    <h3 id="timer-txt" style="margin-top:20px;">Ad Loading... 15s</h3>
+<div id="ad-loader">
+    <div class="spinner"></div>
+    <div id="ad-timer">Loading Advertisement...</div>
 </div>
 
 <div id="section-home">
-    <div class="profile-card">
-        <img id="user-img" class="user-avatar" src="https://via.placeholder.com/60" alt="">
-        <div class="user-meta">
-            <h2 id="user-full-name">Loading...</h2>
-            <span>● Account Verified</span>
+    <div class="profile-header">
+        <img id="u-pic" class="user-pic" src="https://via.placeholder.com/50" alt="">
+        <div class="user-info-text">
+            <span class="user-name" id="u-name">Loading...</span>
+            <span class="user-status">● Active Member</span>
         </div>
     </div>
 
-    <div class="balance-box">
-        <div style="font-size: 12px; opacity: 0.8;">CURRENT BALANCE</div>
-        <div class="balance-val" id="bal-display">$0.000</div>
+    <div class="header-balance">
+        <div class="balance-title">Main Balance</div>
+        <div class="balance-val" id="bal">$0.000</div>
     </div>
 
     <div class="container">
         <div class="card">
-            <div class="card-title"><i class="fas fa-chart-bar"></i> 7 Days Income Status</div>
-            <canvas id="incomeChart" height="160"></canvas>
+            <div class="card-title"><i class="fa-solid fa-chart-line"></i> Income Status</div>
+            <canvas id="incomeChart" height="150"></canvas>
         </div>
-        <button class="btn-pay" onclick="showSection('task')">Start Earning Now</button>
-    </div>
-</div>
-
-<div id="section-wallet" style="display:none;" class="container">
-    <br>
-    <div class="card">
-        <div class="card-title"><i class="fas fa-wallet"></i> Withdraw Balance</div>
-        <p style="font-size: 12px; color: #666; margin-top: -10px;">Minimum Withdrawal: $0.50</p>
-        
-        <label style="font-size: 13px; font-weight: 600;">Select Method:</label>
-        <select class="w-select" id="pay-method">
-            <option value="bKash">bKash</option>
-            <option value="Nagad">Nagad</option>
-            <option value="Binance">Binance (PayID/UID)</option>
-        </select>
-
-        <input type="text" class="w-input" id="pay-address" placeholder="Enter Number or ID">
-        <input type="number" class="w-input" id="pay-amount" placeholder="Amount (e.g. 0.50)">
-        
-        <button class="btn-pay" onclick="processWithdraw()">Withdraw Now</button>
+        <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-circle-play"></i> START EARNING</button>
     </div>
 </div>
 
 <div id="section-task" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title">Tasks</div>
-        <button class="btn-pay" style="margin-bottom:10px; background:#28a745;" onclick="watchVideoAd()">WATCH VIDEO AD (15s)</button>
+        <div class="card-title"><i class="fa-solid fa-check-double"></i> Social Tasks</div>
+        <div class="task-item">
+            <div><b>Join Channel</b><br><small>Reward: $0.03</small></div>
+            <button class="btn-check" onclick="doTask('channel', 0.03, 'https://t.me/trustedbdincome1')">Check</button>
+        </div>
+        <div class="task-item">
+            <div><b>Join Group</b><br><small>Reward: $0.02</small></div>
+            <button class="btn-check" onclick="doTask('group', 0.02, 'https://t.me/trustedbdincome1')">Check</button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
+        <button class="btn-main" onclick="watchAd()">Watch 15s Monetag Ad ($0.003)</button>
+    </div>
+</div>
+
+<div id="section-wallet" style="display:none;" class="container">
+    <br>
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cash Out</div>
+        <p style="font-size: 13px;">Minimum: <b>$0.50</b></p>
+        <select class="withdraw-input" id="method">
+            <option value="Binance UID">Binance UID</option>
+            <option value="bKash">bKash</option>
+            <option value="Nagad">Nagad</option>
+        </select>
+        <input type="text" class="withdraw-input" id="wallet-addr" placeholder="Enter Wallet Info">
+        <input type="number" class="withdraw-input" id="amount" placeholder="Amount (e.g. 0.50)">
+        <button class="btn-main" onclick="handleWithdraw()">Withdraw Now</button>
+    </div>
+</div>
+
+<div id="section-refer" style="display:none;" class="container">
+    <br>
+    <div class="card" style="text-align: center;">
+        <div class="card-title">Referral Program</div>
+        <p>Invite friends and get $0.01 bonus!</p>
+        <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
+        <small>Total Successful Invites</small>
+        <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
     </div>
 </div>
 
 <nav class="nav-bar">
-    <button class="nav-item active" onclick="showSection('home', this)"><i class="fas fa-home"></i>Home</button>
-    <button class="nav-item" onclick="showSection('task', this)"><i class="fas fa-tasks"></i>Task</button>
-    <button class="nav-item" onclick="showSection('wallet', this)"><i class="fas fa-wallet"></i>Wallet</button>
+    <button class="nav-item active" onclick="showSection('home', this)"><i class="fa-solid fa-house"></i>Home</button>
+    <button class="nav-item" onclick="showSection('task', this)"><i class="fa-solid fa-list-check"></i>Task</button>
+    <button class="nav-item" onclick="showSection('refer', this)"><i class="fa-solid fa-users"></i>Refer</button>
+    <button class="nav-item" onclick="showSection('wallet', this)"><i class="fa-solid fa-wallet"></i>Wallet</button>
 </nav>
 
 <script>
@@ -118,74 +144,92 @@
     const db = firebase.database();
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
-    const uid = user?.id || "Admin_Test";
+    const uid = user?.id || "Dev_User";
 
-    let userData = { balance: 0.00, history: [0.01, 0.04, 0.02, 0.05, 0.03, 0.06, 0.01] };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0], tasks: {} };
 
     function init() {
-        if(user) {
-            document.getElementById('user-full-name').innerText = user.first_name + " " + (user.last_name || "");
-            if(user.photo_url) document.getElementById('user-img').src = user.photo_url;
-        }
+        // ইউজার ইনফো সেটআপ
+        document.getElementById('u-name').innerText = user ? `${user.first_name} ${user.last_name || ''}` : "Guest User";
+        if(user?.photo_url) document.getElementById('u-pic').src = user.photo_url;
 
         db.ref('users/' + uid).on('value', (snap) => {
-            const val = snap.val();
-            if(val) {
-                userData = val;
-                document.getElementById('bal-display').innerText = `$${(userData.balance || 0).toFixed(3)}`;
-                renderChart(userData.history);
+            const data = snap.val();
+            if(data) {
+                state = { ...state, ...data };
+                document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
+                document.getElementById('ref-count-display').innerText = state.referrals || 0;
+                renderChart();
             }
         });
     }
 
-    function processWithdraw() {
-        const amt = parseFloat(document.getElementById('pay-amount').value);
-        if(amt < 0.50 || isNaN(amt)) return tg.showAlert("পর্যাপ্ত ব্যালেন্স নেই! মিনিমাম উয়িদ্র ০.৫০$ হতে হবে।");
-        if(amt > userData.balance) return tg.showAlert("আপনার ব্যালেন্সে এত টাকা নেই!");
-
-        userData.balance -= amt;
-        db.ref('users/' + uid).update({ balance: userData.balance });
-        tg.showAlert("আপনার উয়িদ্র সফল হয়েছে! এডমিন পেমেন্ট করে দিবে।");
-    }
-
-    function watchVideoAd() {
-        const overlay = document.getElementById('ad-overlay');
-        overlay.style.display = 'flex';
-        let count = 15;
-        const timer = setInterval(() => {
-            count--;
-            document.getElementById('timer-txt').innerText = `Ad Loading... ${count}s`;
-            if(count <= 0) {
-                clearInterval(timer);
-                overlay.style.display = 'none';
-                userData.balance += 0.003;
-                db.ref('users/' + uid).update({ balance: userData.balance });
-                tg.showAlert("অ্যাড দেখা সফল! $0.003 যোগ হয়েছে।");
+    function watchAd() {
+        const loader = document.getElementById('ad-loader');
+        const timer = document.getElementById('ad-timer');
+        loader.style.display = 'flex';
+        
+        let timeLeft = 15;
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
+            if(timeLeft <= 0) {
+                clearInterval(countdown);
+                loader.style.display = 'none';
+                state.totalEarning += 0.003;
+                db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+                tg.showAlert("Success! You earned $0.003");
             }
         }, 1000);
     }
 
-    function renderChart(data) {
+    function showSection(id, el) {
+        ['home', 'task', 'refer', 'wallet'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
+        document.getElementById('section-' + id).style.display = 'block';
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if(el) el.classList.add('active');
+    }
+
+    function handleWithdraw() {
+        const amt = parseFloat(document.getElementById('amount').value);
+        if(amt < 0.50 || isNaN(amt)) return tg.showAlert("ভুল অ্যামাউন্ট! সর্বনিম্ন $0.50");
+        if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
+
+        state.totalEarning -= amt;
+        db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+        tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
+    }
+
+    function doTask(type, reward, link) {
+        tg.openTelegramLink(link);
+        setTimeout(() => {
+            if(confirm("Confirm: Did you join?")) {
+                state.totalEarning += reward;
+                db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+                tg.showAlert("Bonus Added!");
+            }
+        }, 2000);
+    }
+
+    function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
-        if(window.chartObj) window.chartObj.destroy();
-        window.chartObj = new Chart(ctx, {
+        new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                datasets: [{ data: data, backgroundColor: '#007AFF', borderRadius: 8 }]
+                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+                datasets: [{ data: state.weekly, backgroundColor: '#007AFF', borderRadius: 8 }]
             },
             options: { plugins: { legend: { display: false } }, scales: { y: { display: false } } }
         });
     }
 
-    function showSection(id, btn) {
-        ['home', 'wallet', 'task'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
-        document.getElementById('section-' + id).style.display = 'block';
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if(btn) btn.classList.add('active');
+    function copyRef() {
+        const link = `https://t.me/trustedincome26bot?start=${uid}`;
+        navigator.clipboard.writeText(link).then(() => tg.showAlert("Ref Link Copied!"));
     }
 
     tg.ready();
+    tg.expand();
     window.onload = init;
 </script>
 </body>
