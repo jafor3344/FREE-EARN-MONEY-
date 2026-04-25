@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Taka Income Pro</title>
+    <title>AdCash Pro - Elite</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -11,132 +11,186 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        :root { --primary-color: #007AFF; --bg-color: #F0F2F5; --card-bg: #FFFFFF; --text-color: #1D1D1F; }
-        [data-theme="dark"] { --bg-color: #000000; --card-bg: #1C1C1E; --text-color: #F5F5F7; }
-        body { font-family: sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding-bottom: 80px; }
+        :root { --primary: #007AFF; --bg: #F2F4F7; --card: #FFFFFF; --text: #1C1C1E; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
+        .header { background: var(--primary); color: white; padding: 25px 20px; border-radius: 0 0 30px 30px; text-align: center; }
+        .balance-title { font-size: 14px; opacity: 0.9; }
+        .balance-val { font-size: 36px; font-weight: 800; margin: 5px 0; }
+        
         .container { padding: 15px; }
-        .card { background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .balance-card { background: linear-gradient(135deg, #007AFF, #0056B3); color: white; text-align: center; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--card-bg); display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
-        .nav-item { text-align: center; font-size: 12px; color: #666; text-decoration: none; }
-        .nav-item i { font-size: 20px; display: block; }
-        .btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--primary-color); color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; }
-        input, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
+        .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        
+        .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; border: 1px solid #eee; }
+        .btn-check { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        
+        .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-size: 16px; font-weight: 700; margin-top: 10px; cursor: pointer; }
+
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; }
+        .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
-<div class="container" id="home-section">
-    <div class="card balance-card">
-        <h3>Current Balance</h3>
-        <h1 id="balance-display">$0.000</h1>
+<div id="section-home">
+    <div class="header">
+        <div class="balance-title">Available Balance</div>
+        <div class="balance-val" id="bal">$0.000</div>
+        <div id="user-info" style="font-size: 14px;">Welcome, User</div>
     </div>
-    
-    <div class="card">
-        <h3>7 Days Income Status</h3>
-        <canvas id="incomeChart" height="150"></canvas>
+    <div class="container">
+        <div class="card">
+            <div class="card-title"><i class="fa-solid fa-chart-simple"></i> 7 Days Income Status</div>
+            <canvas id="incomeChart" height="150"></canvas>
+        </div>
+        <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-play"></i> Start Earning</button>
     </div>
 </div>
 
-<div class="container" id="task-section" style="display:none;">
+<div id="section-task" style="display:none;" class="container">
     <div class="card">
-        <h3>Daily Tasks</h3>
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span>Join Telegram Channel</span>
-            <button class="btn" style="width:auto; margin:0;" onclick="completeTask('channel', 0.03, 'https://t.me/your_channel')">Check ($0.03)</button>
+        <div class="card-title"><i class="fa-solid fa-star"></i> Bonus Tasks</div>
+        <div class="task-item">
+            <div><b>Join Channel</b><br><small>Reward: $0.03</small></div>
+            <button class="btn-check" onclick="doTask('channel', 0.03, 'https://t.me/trustedbdincome1')">Check</button>
         </div>
-        <div style="display:flex; justify-content: space-between; align-items: center;">
-            <span>Join Telegram Group</span>
-            <button class="btn" style="width:auto; margin:0;" onclick="completeTask('group', 0.02, 'https://t.me/your_group')">Check ($0.02)</button>
+        <div class="task-item">
+            <div><b>Join Group</b><br><small>Reward: $0.02</small></div>
+            <button class="btn-check" onclick="doTask('group', 0.02, 'https://t.me/trustedbdincome1')">Check</button>
         </div>
+    </div>
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-rectangle-ad"></i> Video Ads</div>
+        <button class="btn-main" onclick="watchAd()">Watch 15s Ad ($0.003)</button>
     </div>
 </div>
 
-<div class="container" id="wallet-section" style="display:none;">
+<div id="section-wallet" style="display:none;" class="container">
     <div class="card">
-        <h3>Withdraw Funds</h3>
-        <select id="withdraw-method">
-            <option value="Binance">Binance</option>
+        <div class="card-title"><i class="fa-solid fa-wallet"></i> Withdraw Funds</div>
+        <p style="font-size: 12px; color: #666;">Minimum withdrawal: $0.50</p>
+        <select class="withdraw-input" id="method">
+            <option value="Binance UID">Binance UID</option>
             <option value="bKash">bKash</option>
             <option value="Nagad">Nagad</option>
         </select>
-        <input type="text" id="wallet-address" placeholder="Enter Number / UID">
-        <input type="number" id="withdraw-amount" placeholder="Amount (Min $0.50)">
-        <button class="btn" onclick="processWithdraw()">Withdraw</button>
+        <input type="text" class="withdraw-input" id="wallet-addr" placeholder="Wallet Number / ID">
+        <input type="number" class="withdraw-input" id="amount" placeholder="Amount (e.g. 0.50)">
+        <button class="btn-main" onclick="handleWithdraw()">Submit Withdrawal</button>
     </div>
 </div>
 
-<div class="nav-bar">
-    <a href="#" class="nav-item" onclick="showSection('home')"><i class="fa-solid fa-house"></i>Home</a>
-    <a href="#" class="nav-item" onclick="showSection('task')"><i class="fa-solid fa-list-check"></i>Task</a>
-    <a href="#" class="nav-item" onclick="showSection('refer')"><i class="fa-solid fa-users"></i>Refer</a>
-    <a href="#" class="nav-item" onclick="showSection('wallet')"><i class="fa-solid fa-wallet"></i>Wallet</a>
-    <a href="#" class="nav-item" onclick="showSection('profile')"><i class="fa-solid fa-user"></i>Profile</a>
+<div id="section-refer" style="display:none;" class="container">
+    <div class="card" style="text-align: center;">
+        <div class="card-title">Refer & Earn</div>
+        <p>Invite friends and get $0.01 per refer!</p>
+        <div id="ref-count-display" style="font-size: 24px; font-weight: bold; color: var(--primary);">0</div>
+        <div style="margin-top: 5px; font-size: 12px; color: #888;">Total Referrals</div>
+        <button class="btn-main" onclick="copyRef()">Copy Invite Link</button>
+    </div>
 </div>
 
+<nav class="nav-bar">
+    <a href="javascript:void(0)" class="nav-item active" onclick="showSection('home', this)"><i class="fa-solid fa-house"></i>Home</a>
+    <a href="javascript:void(0)" class="nav-item" onclick="showSection('task', this)"><i class="fa-solid fa-list-check"></i>Task</a>
+    <a href="javascript:void(0)" class="nav-item" onclick="showSection('refer', this)"><i class="fa-solid fa-users"></i>Refer</a>
+    <a href="javascript:void(0)" class="nav-item" onclick="showSection('wallet', this)"><i class="fa-solid fa-wallet"></i>Wallet</a>
+</nav>
+
 <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAW7q7L9xKvLP36bB7oYHqZy5Ou-7q0S68",
+        authDomain: "fir-90b18.firebaseapp.com",
+        databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com",
+        projectId: "fir-90b18",
+        storageBucket: "fir-90b18.firebasestorage.app",
+        messagingSenderId: "503462119250",
+        appId: "1:503462119250:web:42a45758449b5188835c8b"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
     const tg = window.Telegram.WebApp;
-    let balance = 0.00;
-    let incomeData = [0.1, 0.2, 0.15, 0.3, 0.05, 0.1, 0.0]; // ডামি ৭ দিনের ডাটা
+    const user = tg.initDataUnsafe?.user;
+    const uid = user?.id || "Dev_User";
 
-    function showSection(section) {
-        document.querySelectorAll('.container').forEach(s => s.style.display = 'none');
-        document.getElementById(section + '-section').style.display = 'block';
+    let state = { totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], tasks: {} };
+
+    function init() {
+        db.ref('users/' + uid).on('value', (snap) => {
+            const data = snap.val();
+            if(data) {
+                state = { ...state, ...data };
+                document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
+                document.getElementById('ref-count-display').innerText = state.referrals || 0;
+                document.getElementById('user-info').innerText = `Welcome, ${user?.first_name || 'User'}`;
+                renderChart();
+            }
+        });
     }
 
-    function completeTask(type, reward, link) {
-        window.open(link, '_blank');
+    function showSection(id, el) {
+        ['home', 'task', 'refer', 'wallet'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
+        document.getElementById('section-' + id).style.display = 'block';
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if(el) el.classList.add('active');
+    }
+
+    function doTask(type, reward, link) {
+        if(state.tasks && state.tasks[type]) return tg.showAlert("Task already completed!");
+        tg.openTelegramLink(link);
         setTimeout(() => {
-            balance += reward;
-            updateUI();
-            tg.showAlert(`টাস্ক সফল! আপনি $${reward} পেয়েছেন।`);
-        }, 2000);
+            if(confirm("Have you joined? Click OK to check.")) {
+                state.totalEarning += reward;
+                if(!state.tasks) state.tasks = {};
+                state.tasks[type] = true;
+                db.ref('users/' + uid).update(state);
+                tg.showAlert(`Success! $${reward} added.`);
+            }
+        }, 3000);
     }
 
-    function processWithdraw() {
-        const amount = parseFloat(document.getElementById('withdraw-amount').value);
-        if (amount < 0.50) {
-            tg.showAlert("পর্যাপ্ত ব্যালেন্স নেই! সর্বনিম্ন উইথড্র $০.৫০");
-            return;
-        }
-        if (amount > balance) {
-            tg.showAlert("আপনার ব্যালেন্স কম আছে।");
-            return;
-        }
-        balance -= amount;
-        updateUI();
-        tg.showAlert("আপনার উইথড্র সফল হয়েছে! এডমিন চেক করে পেমেন্ট করে দিবে।");
+    function watchAd() {
+        tg.showScanQrPopup({ text: "Loading 15s Ad..." });
+        setTimeout(() => {
+            tg.closeScanQrPopup();
+            state.totalEarning += 0.003;
+            db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+            tg.showAlert("Ad Success! $0.003 earned.");
+        }, 15000);
     }
 
-    function updateUI() {
-        document.getElementById('balance-display').textContent = `$${balance.toFixed(3)}`;
+    function handleWithdraw() {
+        const amt = parseFloat(document.getElementById('amount').value);
+        if(amt < 0.50 || isNaN(amt)) return tg.showAlert("পর্যাপ্ত ব্যালেন্স নেই! সর্বনিম্ন $0.50");
+        if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
+
+        state.totalEarning -= amt;
+        db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+        tg.showAlert("আপনার উইথড্র সফল হয়েছে!");
     }
 
-    // Chart.js for 7 Days Status
-    const ctx = document.getElementById('incomeChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Today'],
-            datasets: [{
-                label: 'Daily Income ($)',
-                data: incomeData,
-                backgroundColor: '#007AFF',
-                borderRadius: 5
-            }]
-        }
-    });
-
-    // Monetag Ad Setup (15 sec)
-    function showMonetagAd() {
-        // এখানে আপনার Monetag ট্যাগ বসাবেন
-        console.log("Loading 15s Monetag Telegram Ad...");
+    function renderChart() {
+        const ctx = document.getElementById('incomeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+                datasets: [{ label: 'Income', data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 5 }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
     }
 
-    tg.ready();
-    updateUI();
+    function copyRef() {
+        const link = `https://t.me/trustedincome26bot?start=${uid}`;
+        navigator.clipboard.writeText(link).then(() => tg.showAlert("Link Copied!"));
+    }
+
+    window.onload = init;
 </script>
 </body>
 </html>
