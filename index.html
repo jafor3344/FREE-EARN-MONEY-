@@ -1,213 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AdCash Pro</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-    <style>
-        /* আপনার মূল কোডের হুবহু CSS প্রপার্টি ও ক্লাস */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap');
-        :root { --primary-color: #007AFF; --background-color: #F0F2F5; --card-background: #FFFFFF; --text-color: #1D1D1F; }
-        body { font-family: 'Noto Sans', sans-serif; margin: 0; background-color: var(--background-color); padding-bottom: 90px; }
-        
-        .container { max-width: 500px; margin: 0 auto; padding: 20px 15px; }
-        .balance-card { background: linear-gradient(135deg, var(--primary-color), #0056B3); color: white; padding: 30px; border-radius: 24px; text-align: center; margin-bottom: 20px; }
-        .balance-amount { font-size: 44px; font-weight: 800; margin: 10px 0; }
-        
-        /* Income Stats Graph Box */
-        .income-stats-box { background: var(--card-background); border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05); }
-        .chart-container { height: 200px; width: 100%; position: relative; }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }
-        .stat-item { background: var(--card-background); padding: 18px 10px; border-radius: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-        
-        .btn-action { background: var(--primary-color); color: white; border: none; padding: 18px; width: 100%; border-radius: 18px; font-size: 17px; font-weight: 700; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-
-        /* Navigation Buttons */
-        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 5px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .nav-item { border: none; background: none; color: #8E8E93; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-        .nav-item.active { color: var(--primary-color); }
-
-        /* Modal */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: flex-end; z-index: 2000; }
-        .modal-content { background: white; width: 100%; padding: 30px 20px; border-radius: 28px 28px 0 0; box-sizing: border-box; }
-        input, select { width: 100%; padding: 16px; margin: 10px 0; border-radius: 14px; border: 1px solid #eee; background: #f9f9f9; }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <style>
+        /* আপনার আগের সব CSS এখানে থাকবে */
+        .stats-container {
+            background: var(--card-background);
+            margin: 15px;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        canvas#incomeChart {
+            width: 100% !important;
+            height: 200px !important;
+        }
     </style>
 </head>
 <body>
 
+    <div class="stats-container">
+        <div class="chart-header">
+            <h3 style="margin:0; font-size:18px;">Income Stats (7D)</h3>
+            <i class="fa-solid fa-chart-line" style="color:var(--primary-color)"></i>
+        </div>
+        <canvas id="incomeChart"></canvas> </div>
+
     <div class="container">
-        <div class="balance-card">
-            <small>Your Balance</small>
-            <div class="balance-amount" id="totalEarning">$0.000</div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-item"><b id="adCount">0</b><br><small>Ads Watched</small></div>
-            <div class="stat-item"><b id="dailyAds">0/50</b><br><small>Today's Ads</small></div>
-            <div class="stat-item"><b id="referrals">0</b><br><small>Referrals</small></div>
-        </div>
-
-        <div class="income-stats-box">
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px">
-                <b style="font-size:16px">Income Stats (7D)</b>
-                <i class="fa-solid fa-chart-simple" style="color:var(--primary-color)"></i>
-            </div>
-            <div class="chart-container">
-                <canvas id="incomeChart"></canvas>
-            </div>
-        </div>
-
-        <button class="btn-action" onclick="watchAd()"><i class="fa-solid fa-circle-play"></i> Watch Ad</button>
-        <button class="btn-action" style="background:#28a745" onclick="claimBonus('c')"><i class="fa-brands fa-telegram"></i> Join Channel ($0.03)</button>
-        <button class="btn-action" style="background:#17a2b8" onclick="claimBonus('g')"><i class="fa-solid fa-users"></i> Join Group ($0.02)</button>
+        <button class="btn-action" onclick="watchAd()"><i class="fa-solid fa-play"></i> Watch Ad</button>
+        <button class="btn-action" onclick="claimBonus('c')"><i class="fa-brands fa-telegram"></i> Join Channel ($0.03)</button>
+        <button class="btn-action" onclick="claimBonus('g')"><i class="fa-solid fa-users"></i> Join Group ($0.03)</button>
     </div>
-
-    <div id="withdrawModal" class="modal">
-        <div class="modal-content">
-            <h3>Withdraw</h3>
-            <p>Minimum $0.50</p>
-            <select id="method">
-                <option value="Binance UID">Binance UID</option>
-                <option value="Bikash">Bikash</option>
-                <option value="Nogad">Nogad</option>
-            </select>
-            <input type="text" id="wallet" placeholder="Wallet Number / UID">
-            <input type="number" id="amount" placeholder="Amount (min 0.50)">
-            <button class="btn-action" onclick="handleWithdraw()">Submit Request</button>
-            <button onclick="closeModal('withdrawModal')" style="width:100%; border:none; background:none; color:red; margin-top:10px">Cancel</button>
-        </div>
-    </div>
-
-    <nav class="nav-bar">
-        <button class="nav-item" onclick="openModal('withdrawModal')"><i class="fa-solid fa-wallet"></i>Withdraw</button>
-        <button class="nav-item" onclick="alert('Coming Soon')"><i class="fa-solid fa-history"></i>History</button>
-        <button class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</button>
-        <button class="nav-item" onclick="tg.openTelegramLink('https://t.me/+Yzmy6WpJSWVmOWI1')"><i class="fa-solid fa-headset"></i>Support</button>
-        <button class="nav-item" onclick="alert('Daily Bonus Active')"><i class="fa-solid fa-gift"></i>Bonus</button>
-    </nav>
 
     <script>
-        // Config & State
-        const config = {
-            token: '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw',
-            admin: '6717490662',
-            fb: { databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com" }
-        };
+        // আপনার আগের Firebase কনফিগারেশন এবং ভ্যারিয়েবল
+        // ... 
 
-        firebase.initializeApp(config.fb);
-        const db = firebase.database();
-        const tg = window.Telegram.WebApp;
-        const uid = tg.initDataUnsafe?.user?.id || "Test_User";
-
-        let state = { totalEarning: 0, adCount: 0, dailyAds: 0, referrals: 0, lastBonus: "", weekly: [0,0,0,0,0,0,0] };
-
-        // ১-৫৬৪ লাইনের সব লজিক এখানে
-        function init() {
-            db.ref('users/' + uid).on('value', (snap) => {
-                if(snap.exists()) { state = snap.val(); render(); }
-                else { db.ref('users/' + uid).set(state); }
-            });
-            renderChart();
-        }
-
-        function render() {
-            document.getElementById('totalEarning').innerText = `$${state.totalEarning.toFixed(3)}`;
-            document.getElementById('adCount').innerText = state.adCount;
-            document.getElementById('dailyAds').innerText = `${state.dailyAds}/50`;
-            document.getElementById('referrals').innerText = state.referrals || 0;
-        }
-
-        // অ্যাড লজিক ফিক্স
+        // ১. অ্যাড ক্লিক কাজ না করার সমাধান
         async function watchAd() {
-            if(state.dailyAds >= 50) return alert("Daily limit reached!");
-            
-            // Monetag Call
-            if (typeof show_10904278 === 'function') {
-                show_10904278().then(() => addReward(0.003, true));
-            } else {
-                addReward(0.003, true);
-                alert("Ad success! $0.003 added.");
+            const adBtn = document.querySelector('.btn-action');
+            adBtn.disabled = true; // ডাবল ক্লিক আটকাতে
+
+            try {
+                // Monetag লোড হচ্ছে কি না চেক করা
+                if (typeof show_10904278 === 'function') {
+                    await show_10904278(); 
+                    processReward();
+                } else {
+                    // যদি Monetag কাজ না করে তবে সরাসরি রিওয়ার্ড (টেস্টিং এর জন্য)
+                    console.log("Monetag script missing, giving fallback reward");
+                    processReward();
+                }
+            } catch (err) {
+                alert("Ad failed to load. Please try again.");
+            } finally {
+                adBtn.disabled = false;
             }
         }
 
-        function addReward(amt, isAd) {
-            state.totalEarning += amt;
-            if(isAd) { state.adCount++; state.dailyAds++; }
+        function processReward() {
+            state.totalEarning += 0.003;
+            state.adCount++;
+            state.dailyAds++;
             
-            // Update Graph Data
-            const day = new Date().getDay();
-            if(!state.weekly) state.weekly = [0,0,0,0,0,0,0];
-            state.weekly[day] += amt;
+            // আজকের আয়ের ডাটা গ্রাফের জন্য আপডেট করা
+            updateWeeklyStats(0.003); 
             
             db.ref('users/' + uid).update(state);
-            renderChart();
+            alert("সফল! আপনার ব্যালেন্সে $0.003 যোগ হয়েছে।");
+            render();
+            renderChart(); // গ্রাফ রিফ্রেশ করা
         }
 
-        // উইথড্র সিস্টেম
-        function handleWithdraw() {
-            const amt = parseFloat(document.getElementById('amount').value);
-            const meth = document.getElementById('method').value;
-            const wal = document.getElementById('wallet').value;
-
-            if(amt < 0.50) return alert("সর্বনিম্ন উইথড্র $0.50");
-            if(amt > state.totalEarning) return alert("ব্যালেন্স পর্যাপ্ত নয়!");
-
-            state.totalEarning -= amt;
-            db.ref('users/' + uid).update(state);
-
-            alert("পেমেন্ট উইথড্র রিকোয়েস্ট সাকসেস ফুল!");
-            
-            const msg = `Withdrawal Request:\nID: ${uid}\nMethod: ${meth}\nAmount: $${amt}\nWallet: ${wal}`;
-            fetch(`https://api.telegram.org/bot${config.token}/sendMessage?chat_id=${config.admin}&text=${encodeURIComponent(msg)}`);
-            closeModal('withdrawModal');
-        }
-
-        // Bonus
-        function claimBonus(type) {
-            const today = new Date().toLocaleDateString();
-            if(state.lastBonus === today) return alert("আজকের বোনাস নেওয়া শেষ!");
-            
-            const link = (type === 'c') ? 'https://t.me/trustedbdincome1' : 'https://t.me/+Yzmy6WpJSWVmOWI1';
-            const reward = (type === 'c') ? 0.03 : 0.02;
-            
-            tg.openTelegramLink(link);
-            addReward(reward, false);
-            state.lastBonus = today;
-            db.ref('users/' + uid).update(state);
-        }
-
-        // Graph
-        let incomeChart;
+        // ২. Income Stats (7D) গ্রাফ লজিক
         function renderChart() {
             const ctx = document.getElementById('incomeChart').getContext('2d');
-            if(incomeChart) incomeChart.destroy();
-            incomeChart = new Chart(ctx, {
+            const weeklyData = state.weeklyIncome || [0, 0, 0, 0, 0, 0, 0]; // গত ৭ দিনের ডাটা
+            
+            new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                     datasets: [{
-                        data: state.weekly || [0,0,0,0,0,0,0],
-                        backgroundColor: '#5E5CE6', borderRadius: 5
+                        label: 'Income',
+                        data: weeklyData,
+                        backgroundColor: '#5E5CE6',
+                        borderRadius: 8,
+                        barThickness: 20
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
             });
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function copyRef() { navigator.clipboard.writeText(`https://t.me/trustedincome26bot?start=${uid}`); alert("Referral link copied!"); }
+        // সপ্তাহের আয়ের ডাটাবেস হ্যান্ডলিং
+        function updateWeeklyStats(amount) {
+            const dayIndex = new Date().getDay(); // আজকের দিন (০-৬)
+            if(!state.weeklyIncome) state.weeklyIncome = [0,0,0,0,0,0,0];
+            state.weeklyIncome[dayIndex] += amount;
+        }
 
-        window.onload = init;
+        // উইন্ডো লোড হওয়ার সময় চার্ট দেখানো
+        window.onload = () => {
+            init(); 
+            setTimeout(renderChart, 2000); // ডাটা লোড হওয়ার পর চার্ট আঁকা
+        };
     </script>
+
     <script src="https://alwingulla.com/88/tag.min.js" data-zone="10904278" async data-cfasync="false"></script>
 </body>
 </html>
