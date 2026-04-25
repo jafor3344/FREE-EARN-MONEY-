@@ -12,147 +12,220 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* UI CSS */
-        :root { --primary-color: #007AFF; --card-bg: #FFFFFF; }
-        body { font-family: sans-serif; background: #F0F2F5; margin: 0; padding-bottom: 80px; }
-        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
-        
-        .balance-card { background: linear-gradient(135deg, #007AFF, #0056B3); color: white; padding: 25px; border-radius: 20px; text-align: center; margin-bottom: 15px; }
-        .balance-amount { font-size: 38px; font-weight: 800; margin: 5px 0; }
-        
-        .income-stats-box { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
-        .chart-container { height: 180px; width: 100%; }
+        :root { --primary-color: #007AFF; --bg-color: #F8F9FE; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 90px; color: #333; }
+        .header { padding: 20px; display: flex; align-items: center; gap: 15px; }
+        .user-avatar { width: 50px; height: 50px; border-radius: 50%; background: #ddd; object-fit: cover; }
+        .welcome-text { font-size: 18px; font-weight: bold; color: #222; }
 
-        .btn-action { background: var(--primary-color); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .container { max-width: 500px; margin: 0 auto; padding: 0 15px; }
         
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
-        .nav-item { border: none; background: none; color: #888; font-size: 11px; display: flex; flex-direction: column; align-items: center; }
+        .balance-card { background: linear-gradient(135deg, #007AFF, #0056B3); color: white; padding: 30px 20px; border-radius: 24px; text-align: center; box-shadow: 0 10px 20px rgba(0,122,255,0.2); position: relative; overflow: hidden; }
+        .balance-card::after { content: ''; position: absolute; right: -20px; bottom: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+        .balance-amount { font-size: 42px; font-weight: 800; margin: 10px 0; }
 
-        /* Modal Styles */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 24px; box-sizing: border-box; text-align: center; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .stat-box { background: white; padding: 15px 10px; border-radius: 18px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .stat-value { display: block; font-size: 18px; font-weight: 700; color: #222; }
+        .stat-label { font-size: 11px; color: #888; margin-top: 4px; display: block; }
+
+        .chart-box { background: white; border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .chart-container { height: 180px; }
+
+        .btn-main { background: var(--primary-color); color: white; border: none; padding: 18px; width: 100%; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 6px 15px rgba(0,122,255,0.3); }
+
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 100; }
+        .nav-item { border: none; background: none; color: #999; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+        .nav-item i { font-size: 20px; }
+        .nav-item.active { color: var(--primary-color); }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 100%; max-width: 380px; padding: 30px; border-radius: 28px; text-align: center; }
+        .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1.5px solid #eee; font-size: 14px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary-color); }
     </style>
 </head>
 <body>
 
+<div class="header">
+    <img id="userPhoto" class="user-avatar" src="https://via.placeholder.com/50" alt="User">
+    <div class="welcome-text">Welcome, <span id="userName">User</span>!</div>
+</div>
+
 <div class="container">
     <div class="balance-card">
-        <small>Available Balance</small>
+        <small style="opacity: 0.8; letter-spacing: 1px;">YOUR BALANCE</small>
         <div class="balance-amount" id="totalEarning">$0.000</div>
     </div>
 
-    <div class="income-stats-box">
-        <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
-            <b>Income Stats (7D)</b>
-            <i class="fa-solid fa-chart-line" style="color:var(--primary-color)"></i>
+    <div class="stats-grid">
+        <div class="stat-box">
+            <span class="stat-value" id="allTimeAds">0</span>
+            <span class="stat-label">Ads Watched</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="dailyCount">0/50</span>
+            <span class="stat-label">Today's Ads</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-value" id="refCount">0</span>
+            <span class="stat-label">Referrals</span>
+        </div>
+    </div>
+
+    <div class="chart-box">
+        <div class="chart-header">
+            <b style="font-size: 15px;">Income Stats (7D)</b>
+            <i class="fa-solid fa-chart-line" style="color: var(--primary-color);"></i>
         </div>
         <div class="chart-container">
             <canvas id="incomeChart"></canvas>
         </div>
     </div>
 
-    <button class="btn-action" onclick="watchAd()"><i class="fa-solid fa-play-circle"></i> Watch Video Ad</button>
+    <button class="btn-main" onclick="watchAd()">
+        <i class="fa-solid fa-circle-play"></i> Watch Ad
+    </button>
 </div>
 
 <nav class="nav-bar">
-    <button class="nav-item" onclick="openModal('withdrawModal')"><i class="fa-solid fa-wallet"></i>Withdraw</button>
-    <button class="nav-item" onclick="alert('No history found!')"><i class="fa-solid fa-history"></i>History</button>
-    <button class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</button>
-    <button class="nav-item" onclick="showBonusTasks()"><i class="fa-solid fa-gift"></i>Bonus</button>
-    <button class="nav-item" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')"><i class="fa-solid fa-headset"></i>Support</button>
+    <div class="nav-item" onclick="openModal('withdrawModal')"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</div>
+    <div class="nav-item" onclick="alert('History is empty!')"><i class="fa-solid fa-clock-rotate-left"></i>History</div>
+    <div class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</div>
+    <div class="nav-item" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')"><i class="fa-solid fa-headset"></i>Support</div>
+    <div class="nav-item" onclick="showBonus()"><i class="fa-solid fa-gift"></i>Bonus</div>
 </nav>
 
 <div id="withdrawModal" class="modal">
     <div class="modal-content">
-        <h3 style="margin-top:0">Withdraw</h3>
-        <p style="font-size:13px; color:#666">Minimum $0.50 Required</p>
+        <div class="modal-title">Withdraw</div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Minimum $0.50 Required</p>
         
         <select id="method">
             <option value="Binance UID">Binance UID</option>
             <option value="Bkash">Bkash</option>
             <option value="Nagad">Nagad</option>
         </select>
-        
-        <input type="text" id="wallet" placeholder="Wallet Number / Binance UID">
+        <input type="text" id="wallet" placeholder="Wallet Number / UID">
         <input type="number" id="amount" step="0.01" placeholder="Amount (min 0.50)">
         
-        <button class="btn-action" onclick="handleWithdraw()">Submit Request</button>
-        <button onclick="closeModal('withdrawModal')" style="width:100%; border:none; background:none; color:red; margin-top:10px">Cancel</button>
+        <button class="btn-main" onclick="handleWithdraw()" style="margin-top: 15px;">Submit Request</button>
+        <div onclick="closeModal('withdrawModal')" style="margin-top: 15px; color: #FF3B30; font-weight: bold; cursor: pointer;">Cancel</div>
     </div>
 </div>
 
 <script>
-    // Firebase Config
-    const config = {
-        token: '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw',
-        admin: '6717490662',
-        fb: { databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com" }
+    const firebaseConfig = {
+        apiKey: "AIzaSyAW7q7L9xKvLP36bB7oYHqZy5Ou-7q0S68",
+        authDomain: "fir-90b18.firebaseapp.com",
+        databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com",
+        projectId: "fir-90b18",
+        storageBucket: "fir-90b18.firebasestorage.app",
+        messagingSenderId: "503462119250",
+        appId: "1:503462119250:web:42a45758449b5188835c8b"
     };
 
-    firebase.initializeApp(config.fb);
+    const botToken = '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw';
+    const adminId = '6717490662';
+
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const tg = window.Telegram.WebApp;
-    const uid = tg.initDataUnsafe?.user?.id || "Dev_User";
+    tg.expand();
 
-    let state = { totalEarning: 0, weekly: [0,0,0,0,0,0,0], referrals: 0 };
+    const user = tg.initDataUnsafe?.user;
+    const uid = user?.id || "Dev_User";
+    const fullName = user ? `${user.first_name} ${user.last_name || ""}` : "Ridoy Khan";
+
+    // সেট ইউজার নাম ও ফটো
+    document.getElementById('userName').innerText = fullName;
+    if(user?.photo_url) document.getElementById('userPhoto').src = user.photo_url;
+
+    // Default State - Undefined সমস্যা রোধ করতে
+    let state = { 
+        totalEarning: 0, 
+        weekly: [0,0,0,0,0,0,0], 
+        dailyAds: 0, 
+        allTimeAds: 0,
+        referrals: 16,
+        lastDate: new Date().toLocaleDateString()
+    };
 
     function init() {
         db.ref('users/' + uid).on('value', (snap) => {
             if(snap.exists()) {
-                state = snap.val();
-                if(!state.weekly) state.weekly = [0,0,0,0,0,0,0];
+                const data = snap.val();
+                // ডাটা মার্জ করা যাতে 'undefined' না আসে
+                state = { ...state, ...data };
+                checkDailyReset();
                 renderUI();
             } else {
                 db.ref('users/' + uid).set(state);
             }
         });
-        renderChart();
+    }
+
+    function checkDailyReset() {
+        const today = new Date().toLocaleDateString();
+        if (state.lastDate !== today) {
+            state.dailyAds = 0;
+            state.lastDate = today;
+            db.ref('users/' + uid).update({ dailyAds: 0, lastDate: today });
+        }
     }
 
     function renderUI() {
-        document.getElementById('totalEarning').innerText = `$${state.totalEarning.toFixed(3)}`;
+        document.getElementById('totalEarning').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
+        document.getElementById('allTimeAds').innerText = state.allTimeAds || 0;
+        document.getElementById('dailyCount').innerText = `${state.dailyAds || 0}/50`;
+        document.getElementById('refCount').innerText = state.referrals || 0;
         renderChart();
     }
 
-    // Fixed Ad Button
     async function watchAd() {
+        if (state.dailyAds >= 50) return alert("Daily limit reached!");
+        
         if (typeof show_10904278 === 'function') {
             show_10904278().then(() => addReward(0.003));
         } else {
-            addReward(0.003); // Fallback reward
-            alert("Success! $0.003 added to your balance.");
+            // Fallback reward for testing
+            addReward(0.003);
+            alert("Ad Success! $0.003 Added.");
         }
     }
 
     function addReward(amt) {
-        state.totalEarning += amt;
+        state.totalEarning = (state.totalEarning || 0) + amt;
+        state.dailyAds = (state.dailyAds || 0) + 1;
+        state.allTimeAds = (state.allTimeAds || 0) + 1;
+        
         const day = new Date().getDay();
+        if(!state.weekly) state.weekly = [0,0,0,0,0,0,0];
         state.weekly[day] += amt;
+        
         db.ref('users/' + uid).update(state);
     }
 
-    // Withdraw System
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
         const meth = document.getElementById('method').value;
         const wal = document.getElementById('wallet').value;
 
-        if(amt < 0.50) return alert("সর্বনিম্ন উইথড্র $0.50");
-        if(amt > state.totalEarning) return alert("ব্যালেন্স পর্যাপ্ত নয়!");
+        if(amt < 0.50 || isNaN(amt)) return alert("Minimum withdraw $0.50");
+        if(amt > state.totalEarning) return alert("Insufficient Balance!");
 
         state.totalEarning -= amt;
-        db.ref('users/' + uid).update(state);
-        
-        // Admin Notification
-        const msg = `Withdraw Success!\nUser: ${uid}\nMethod: ${meth}\nAmount: $${amt}\nWallet: ${wal}`;
-        fetch(`https://api.telegram.org/bot${config.token}/sendMessage?chat_id=${config.admin}&text=${encodeURIComponent(msg)}`);
+        db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
 
-        alert("পেমেন্ট উইথড্র রিকোয়েস্ট সাকসেস ফুল!");
+        const msg = `💰 Withdraw Request!\n👤 User: ${fullName}\n🆔 ID: ${uid}\n🏦 Method: ${meth}\n💵 Amount: $${amt}\n💳 Wallet: ${wal}`;
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${adminId}&text=${encodeURIComponent(msg)}`);
+
+        alert("Request Sent Successfully!");
         closeModal('withdrawModal');
     }
 
-    // Graph Logic
     let myChart;
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
@@ -160,27 +233,31 @@
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
                 datasets: [{
-                    data: state.weekly,
-                    backgroundColor: '#5E5CE6',
-                    borderRadius: 6
+                    data: state.weekly || [0,0,0,0,0,0,0],
+                    backgroundColor: '#007AFF',
+                    borderRadius: 8,
+                    barThickness: 15
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, display: false }, x: { grid: { display: false } } }
+            }
         });
     }
 
-    // Invite & Tasks
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
-        navigator.clipboard.writeText(link);
-        alert("Referral link copied!");
+        navigator.clipboard.writeText(link).then(() => alert("Referral Link Copied!"));
     }
 
-    function showBonusTasks() {
+    function showBonus() {
         tg.openTelegramLink('https://t.me/trustedbdincome1');
-        alert("Join channel and stay active for bonus!");
+        alert("Join channel for Daily Bonus!");
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
