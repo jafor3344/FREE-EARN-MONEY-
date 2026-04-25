@@ -14,9 +14,8 @@
         :root { --primary: #007AFF; --bg: #F2F4F7; --card: #FFFFFF; --text: #1C1C1E; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
         
-        /* প্রোফাইল হেডার */
         .profile-header { display: flex; align-items: center; gap: 15px; padding: 20px; background: var(--card); margin-bottom: 1px; border-radius: 0 0 20px 20px; }
-        .user-pic { width: 50px; height: 50px; border-radius: 50%; background: #ddd; object-fit: cover; border: 2px solid var(--primary); }
+        .user-pic { width: 50px; height: 50px; border-radius: 50%; background: #ddd; object-fit: cover; border: 2px solid var(--primary); display: block; }
         .user-info-text { display: flex; flex-direction: column; }
         .user-name { font-weight: 800; font-size: 18px; color: var(--text); }
         .user-status { font-size: 12px; color: #4CAF50; font-weight: bold; }
@@ -35,7 +34,6 @@
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
 
-        /* অ্যাড লোডার ওভারলে */
         #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -55,7 +53,7 @@
 
 <div id="section-home">
     <div class="profile-header">
-        <img id="u-pic" class="user-pic" src="https://via.placeholder.com/50" alt="">
+        <img id="u-pic" class="user-pic" src="https://ui-avatars.com/api/?name=User&background=007AFF&color=fff" alt="User">
         <div class="user-info-text">
             <span class="user-name" id="u-name">Loading...</span>
             <span class="user-status">● Active Member</span>
@@ -70,7 +68,9 @@
     <div class="container">
         <div class="card">
             <div class="card-title"><i class="fa-solid fa-chart-line"></i> Income Status</div>
-            <canvas id="incomeChart" height="150"></canvas>
+            <div style="height: 180px; width: 100%;">
+                <canvas id="incomeChart"></canvas>
+            </div>
         </div>
         <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-circle-play"></i> START EARNING</button>
     </div>
@@ -146,12 +146,20 @@
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0], tasks: {} };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], tasks: {} };
+    let incomeChart = null;
 
     function init() {
-        // ইউজার ইনফো সেটআপ
-        document.getElementById('u-name').innerText = user ? `${user.first_name} ${user.last_name || ''}` : "Guest User";
-        if(user?.photo_url) document.getElementById('u-pic').src = user.photo_url;
+        // নাম সেটআপ
+        const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "Guest User";
+        document.getElementById('u-name').innerText = name;
+        
+        // প্রোফাইল পিকচার সেটআপ
+        if(user && user.photo_url) {
+            document.getElementById('u-pic').src = user.photo_url;
+        } else {
+            document.getElementById('u-pic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007AFF&color=fff`;
+        }
 
         db.ref('users/' + uid).on('value', (snap) => {
             const data = snap.val();
@@ -159,7 +167,9 @@
                 state = { ...state, ...data };
                 document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
                 document.getElementById('ref-count-display').innerText = state.referrals || 0;
-                renderChart();
+                renderChart(); // ডাটা আসার পর গ্রাফ রেন্ডার
+            } else {
+                renderChart(); // নতুন ইউজার হলে ডিফল্ট গ্রাফ
             }
         });
     }
@@ -168,7 +178,6 @@
         const loader = document.getElementById('ad-loader');
         const timer = document.getElementById('ad-timer');
         loader.style.display = 'flex';
-        
         let timeLeft = 15;
         const countdown = setInterval(() => {
             timeLeft--;
@@ -188,13 +197,13 @@
         document.getElementById('section-' + id).style.display = 'block';
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(el) el.classList.add('active');
+        if(id === 'home') setTimeout(renderChart, 100);
     }
 
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
         if(amt < 0.50 || isNaN(amt)) return tg.showAlert("ভুল অ্যামাউন্ট! সর্বনিম্ন $0.50");
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
-
         state.totalEarning -= amt;
         db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
         tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
@@ -211,15 +220,31 @@
         }, 2000);
     }
 
+    // গ্রাফ রেন্ডার ফাংশন ফিক্স
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
-        new Chart(ctx, {
+        if(incomeChart) incomeChart.destroy(); // আগের চার্ট ডিলিট
+        
+        incomeChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-                datasets: [{ data: state.weekly, backgroundColor: '#007AFF', borderRadius: 8 }]
+                datasets: [{
+                    label: 'Income',
+                    data: state.weekly,
+                    backgroundColor: '#007AFF',
+                    borderRadius: 8
+                }]
             },
-            options: { plugins: { legend: { display: false } }, scales: { y: { display: false } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } },
+                    x: { grid: { display: false } }
+                }
+            }
         });
     }
 
