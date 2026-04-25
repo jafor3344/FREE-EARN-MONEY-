@@ -91,7 +91,7 @@
     </div>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
-        <button class="btn-main" onclick="watchAd()">Watch 15s Monetag Ad ($0.003)</button>
+        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.003)</button>
     </div>
 </div>
 
@@ -150,11 +150,9 @@
     let incomeChart = null;
 
     function init() {
-        // নাম সেটআপ
         const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "Guest User";
         document.getElementById('u-name').innerText = name;
         
-        // প্রোফাইল পিকচার সেটআপ
         if(user && user.photo_url) {
             document.getElementById('u-pic').src = user.photo_url;
         } else {
@@ -167,14 +165,18 @@
                 state = { ...state, ...data };
                 document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
                 document.getElementById('ref-count-display').innerText = state.referrals || 0;
-                renderChart(); // ডাটা আসার পর গ্রাফ রেন্ডার
+                renderChart();
             } else {
-                renderChart(); // নতুন ইউজার হলে ডিফল্ট গ্রাফ
+                renderChart();
             }
         });
     }
 
+    // অ্যাড ফাংশন আপডেট - ডাইরেক্ট লিঙ্ক যুক্ত করা হয়েছে
     function watchAd() {
+        const adLink = "https://omg10.com/4/10924120"; // আপনার দেওয়া লিঙ্ক
+        tg.openLink(adLink); // লিঙ্ক ওপেন করা
+
         const loader = document.getElementById('ad-loader');
         const timer = document.getElementById('ad-timer');
         loader.style.display = 'flex';
@@ -220,10 +222,9 @@
         }, 2000);
     }
 
-    // গ্রাফ রেন্ডার ফাংশন ফিক্স
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
-        if(incomeChart) incomeChart.destroy(); // আগের চার্ট ডিলিট
+        if(incomeChart) incomeChart.destroy();
         
         incomeChart = new Chart(ctx, {
             type: 'bar',
