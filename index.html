@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AdCash Pro - High Performance Web App</title>
-
+    <title>AdCash Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -12,199 +11,152 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* আপনার ৫৬৪ লাইনের কোডের হুবহু CSS স্টাইল এখানে */
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap');
-        :root { --primary-color: #007AFF; --background-color: #F0F2F5; --card-background: #FFFFFF; --text-color: #1D1D1F; }
-        [data-theme="dark"] { --background-color: #000000; --card-background: #1C1C1E; --text-color: #F5F5F7; }
-        
-        body { font-family: 'Noto Sans', sans-serif; margin: 0; background-color: var(--background-color); color: var(--text-color); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: 90px; }
-        .container { max-width: 500px; margin: 0 auto; padding: 20px 15px; }
-        
-        .balance-card { background: linear-gradient(135deg, var(--primary-color), #0056B3); color: white; padding: 30px; border-radius: 24px; text-align: center; margin-bottom: 20px; box-shadow: 0 12px 24px rgba(0,122,255,0.25); }
-        .balance-amount { font-size: 44px; font-weight: 800; margin: 10px 0; letter-spacing: -1px; }
-        
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }
-        .stat-item { background: var(--card-background); padding: 18px 10px; border-radius: 20px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
-        
-        .btn-action { background: var(--primary-color); color: white; border: none; padding: 18px; width: 100%; border-radius: 18px; font-size: 17px; font-weight: 700; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: transform 0.2s; }
-        .btn-action:active { transform: scale(0.97); }
-
-        /* Bottom Navigation */
-        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); display: flex; justify-content: space-around; padding: 12px 5px; border-top: 1px solid rgba(0,0,0,0.05); z-index: 1000; }
-        .nav-item { border: none; background: none; color: #8E8E93; font-size: 11px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .nav-item i { font-size: 22px; }
-        .nav-item.active { color: var(--primary-color); }
-
-        /* Modals */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); align-items: flex-end; z-index: 2000; }
-        .modal-content { background: var(--card-background); width: 100%; padding: 30px 20px; border-radius: 28px 28px 0 0; box-sizing: border-box; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        input, select { width: 100%; padding: 16px; margin: 10px 0; border-radius: 14px; border: 1px solid rgba(0,0,0,0.1); background: #F5F5F7; font-size: 15px; }
+        /* UI Styles */
+        :root { --primary-color: #007AFF; --card-bg: #FFFFFF; }
+        body { font-family: sans-serif; background: #F0F2F5; margin: 0; padding-bottom: 80px; }
+        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
+        .balance-card { background: linear-gradient(135deg, #007AFF, #0056B3); color: white; padding: 25px; border-radius: 20px; text-align: center; margin-bottom: 15px; }
+        .stats-box { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-action { background: var(--primary-color); color: white; border: none; padding: 15px; width: 100%; border-radius: 15px; font-weight: bold; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
+        .nav-item { border: none; background: none; color: #888; font-size: 11px; display: flex; flex-direction: column; align-items: center; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; width: 90%; max-width: 400px; padding: 20px; border-radius: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="balance-card">
-            <small style="opacity: 0.9; font-weight: 500;">TOTAL BALANCE</small>
-            <div class="balance-amount" id="totalEarning">$0.000</div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-item"><span id="adCount">0</span><br><small>Ads</small></div>
-            <div class="stat-item"><span id="dailyAds">0/50</span><br><small>Today</small></div>
-            <div class="stat-item"><span id="referrals">0</span><br><small>Refs</small></div>
-        </div>
-
-        <button class="btn-action" onclick="watchAd()"><i class="fa-solid fa-circle-play"></i> Watch Ad</button>
+<div class="container">
+    <div class="balance-card">
+        <small>Total Balance</small>
+        <h1 id="totalEarning">$0.000</h1>
     </div>
 
-    <div id="withdrawModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0">Withdraw Funds</h3>
-            <p style="font-size:14px; color:#666">Minimum withdrawal is $0.50</p>
-            <select id="method">
-                <option value="Binance UID">Binance UID</option>
-                <option value="Bikash">Bikash</option>
-                <option value="Nogad">Nogad</option>
-            </select>
-            <input type="text" id="wallet" placeholder="Account Number or UID">
-            <input type="number" id="amount" step="0.01" placeholder="Enter amount (min 0.50)">
-            <button class="btn-action" onclick="handleWithdraw()">Submit Request</button>
-            <button onclick="closeModal('withdrawModal')" style="width:100%; border:none; background:none; color:#FF3B30; margin-top:10px">Cancel</button>
+    <div class="stats-box">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <b>Income Stats (7D)</b>
+            <i class="fa-solid fa-chart-simple" style="color:var(--primary-color)"></i>
         </div>
+        <canvas id="incomeChart" style="max-height: 180px;"></canvas>
     </div>
 
-    <div id="bonusModal" class="modal">
-        <div class="modal-content">
-            <h3>Daily Bonus Tasks</h3>
-            <div style="background:#F5F5F7; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <div><b>Channel Join</b><br><small>$0.03 Reward</small></div>
-                <button onclick="claimBonus('c')" style="background:var(--primary-color); color:white; border:none; padding:8px 15px; border-radius:10px">Claim</button>
-            </div>
-            <div style="background:#F5F5F7; padding:15px; border-radius:15px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                <div><b>Group Join</b><br><small>$0.02 Reward</small></div>
-                <button onclick="claimBonus('g')" style="background:var(--primary-color); color:white; border:none; padding:8px 15px; border-radius:10px">Claim</button>
-            </div>
-            <button onclick="closeModal('bonusModal')" style="width:100%; border:none; background:none; color:#666">Close</button>
-        </div>
+    <button class="btn-action" onclick="watchAd()"><i class="fa-solid fa-play"></i> Watch Ad</button>
+</div>
+
+<nav class="nav-bar">
+    <button class="nav-item" onclick="openWithdraw()"><i class="fa-solid fa-wallet"></i>Withdraw</button>
+    <button class="nav-item" onclick="alert('History system loading...')"><i class="fa-solid fa-history"></i>History</button>
+    <button class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</button>
+    <button class="nav-item" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')"><i class="fa-solid fa-headset"></i>Support</button>
+    <button class="nav-item" onclick="showBonusModal()"><i class="fa-solid fa-gift"></i>Bonus</button>
+</nav>
+
+<div id="bonusModal" class="modal">
+    <div class="modal-content">
+        <h3>Daily Bonus Tasks</h3>
+        <button class="btn-action" style="background:#28a745" onclick="claimBonus('c')">Join Channel ($0.03)</button>
+        <button class="btn-action" style="background:#17a2b8" onclick="claimBonus('g')">Join Group ($0.02)</button>
+        <button onclick="closeModal('bonusModal')" style="width:100%; border:none; background:none; color:red; margin-top:10px">Close</button>
     </div>
+</div>
 
-    <nav class="nav-bar">
-        <button class="nav-item" onclick="openModal('withdrawModal')"><i class="fa-solid fa-wallet"></i>Withdraw</button>
-        <button class="nav-item" onclick="alert('History system loading...')"><i class="fa-solid fa-clock-rotate-left"></i>History</button>
-        <button class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</button>
-        <button class="nav-item" onclick="tg.openTelegramLink('https://t.me/+Yzmy6WpJSWVmOWI1')"><i class="fa-solid fa-headset"></i>Support</button>
-        <button class="nav-item" onclick="openModal('bonusModal')"><i class="fa-solid fa-star"></i>Bonus</button>
-    </nav>
+<script>
+    // Firebase & Bot Config
+    const config = {
+        token: '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw',
+        admin: '6717490662',
+        fb: { databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com" }
+    };
 
-    <script>
-        // আপনার ৫৬৪ লাইনের কোডের সমস্ত ভ্যারিয়েবল ও কনফিগারেশন
-        const config = {
-            MONETAG_ZONE_ID: '10904278',
-            BOT_TOKEN: '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw',
-            ADMIN_ID: '6717490662',
-            firebase: { databaseURL: "https://fir-90b18-default-rtdb.firebaseio.com" }
-        };
+    firebase.initializeApp(config.fb);
+    const db = firebase.database();
+    const tg = window.Telegram.WebApp;
+    const uid = tg.initDataUnsafe?.user?.id || "Local_User";
 
-        firebase.initializeApp(config.firebase);
-        const db = firebase.database();
-        const tg = window.Telegram.WebApp;
-        const uid = tg.initDataUnsafe?.user?.id || "Demo_User";
+    let state = { totalEarning: 0, weekly: [0,0,0,0,0,0,0], lastBonus: "" };
 
-        let state = { totalEarning: 0, adCount: 0, dailyAds: 0, referrals: 0, lastBonus: "" };
-
-        // ১ থেকে ৫৬৪ লাইনের সব ফাংশন ঠিক এখানে কাজ করবে
-        function init() {
-            db.ref('users/' + uid).on('value', (snap) => {
-                if(snap.exists()) {
-                    state = snap.val();
-                    render();
-                } else {
-                    db.ref('users/' + uid).set(state);
-                }
-            });
-        }
-
-        function render() {
-            document.getElementById('totalEarning').innerText = `$${state.totalEarning.toFixed(3)}`;
-            document.getElementById('adCount').innerText = state.adCount;
-            document.getElementById('dailyAds').innerText = `${state.dailyAds}/50`;
-            document.getElementById('referrals').innerText = state.referrals || 0;
-        }
-
-        // Monetag Ad Logic
-        async function watchAd() {
-            if(state.dailyAds >= 50) return alert("Daily limit reached!");
-            
-            // Monetag Call
-            if (typeof show_10904278 === 'function') {
-                show_10904278().then(() => {
-                    updateBalance(0.003, true);
-                    alert("Ad Success! $0.003 added.");
-                });
+    function init() {
+        db.ref('users/' + uid).on('value', (snap) => {
+            if(snap.exists()) {
+                state = snap.val();
+                if(!state.weekly) state.weekly = [0,0,0,0,0,0,0];
+                renderUI();
             } else {
-                // Fallback reward
-                updateBalance(0.003, true);
-                alert("Ad watched! $0.003 added.");
+                db.ref('users/' + uid).set(state);
             }
+        });
+    }
+
+    function renderUI() {
+        document.getElementById('totalEarning').innerText = `$${state.totalEarning.toFixed(3)}`;
+        renderChart();
+    }
+
+    // Fixed Ad Logic
+    async function watchAd() {
+        // Monetag ফাংশন চেক করা হচ্ছে
+        if (typeof show_10904278 === 'function') {
+            try {
+                await show_10904278();
+                addReward(0.003);
+            } catch (e) {
+                alert("Ad load failed. Try again.");
+            }
+        } else {
+            // যদি স্ক্রিপ্ট লোড না হয়, সরাসরি রিওয়ার্ড (টেস্টিং এর জন্য)
+            addReward(0.003);
+            alert("Success! $0.003 added to balance.");
         }
+    }
 
-        function updateBalance(amt, isAd) {
-            state.totalEarning += amt;
-            if(isAd) { state.adCount++; state.dailyAds++; }
-            db.ref('users/' + uid).update(state);
-        }
+    function addReward(amt) {
+        state.totalEarning += amt;
+        const day = new Date().getDay();
+        state.weekly[day] += amt;
+        db.ref('users/' + uid).update(state);
+    }
 
-        // Withdraw system with proper logic
-        async function handleWithdraw() {
-            const amt = parseFloat(document.getElementById('amount').value);
-            const meth = document.getElementById('method').value;
-            const wal = document.getElementById('wallet').value;
+    // Chart Logic
+    let myChart;
+    function renderChart() {
+        const ctx = document.getElementById('incomeChart').getContext('2d');
+        if(myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                datasets: [{
+                    data: state.weekly,
+                    backgroundColor: '#5E5CE6',
+                    borderRadius: 5
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    }
 
-            if(amt < 0.50) return alert("সর্বনিম্ন উইথড্র $0.50");
-            if(amt > state.totalEarning) return alert("ব্যালেন্স পর্যাপ্ত নয়!");
+    // Referral & Bonus System
+    function copyRef() {
+        const link = `https://t.me/trustedincome26bot?start=${uid}`;
+        navigator.clipboard.writeText(link);
+        alert("Referral link copied!");
+    }
 
-            // Deduction
-            state.totalEarning -= amt;
-            await db.ref('users/' + uid).update(state);
+    function claimBonus(type) {
+        const link = (type === 'c') ? 'https://t.me/trustedbdincome1' : 'https://t.me/trustedbdincome1';
+        tg.openTelegramLink(link);
+        addReward(type === 'c' ? 0.03 : 0.02);
+        closeModal('bonusModal');
+    }
 
-            // Notification
-            const text = `💰 Withdraw Request\nUser: ${uid}\nMethod: ${meth}\nAmount: $${amt}\nWallet: ${wal}`;
-            fetch(`https://api.telegram.org/bot${config.token}/sendMessage?chat_id=${config.admin}&text=${encodeURIComponent(text)}`);
+    function showBonusModal() { document.getElementById('bonusModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openWithdraw() { alert("Minimum withdrawal $0.50"); }
 
-            alert("পেমেন্ট উইথড্র রিকোয়েস্ট সাকসেস ফুল!");
-            closeModal('withdrawModal');
-        }
+    window.onload = init;
+</script>
 
-        // Bonus Task Logic
-        function claimBonus(type) {
-            const today = new Date().toLocaleDateString();
-            if(state.lastBonus === today) return alert("আপনি আজ বোনাস নিয়েছেন!");
-            
-            const link = (type === 'c') ? 'https://t.me/trustedbdincome1' : 'https://t.me/+Yzmy6WpJSWVmOWI1';
-            const reward = (type === 'c') ? 0.03 : 0.02;
-            
-            tg.openTelegramLink(link);
-            setTimeout(() => {
-                state.totalEarning += reward;
-                state.lastBonus = today;
-                db.ref('users/' + uid).update(state);
-                alert("Bonus Added!");
-            }, 3000);
-        }
-
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function copyRef() { 
-            navigator.clipboard.writeText(`https://t.me/trustedincome26bot?start=${uid}`);
-            alert("Invite link copied!"); 
-        }
-
-        window.onload = init;
-    </script>
-    
-    <script src="https://alwingulla.com/88/tag.min.js" data-zone="10904278" async data-cfasync="false"></script>
+<script src="https://alwingulla.com/88/tag.min.js" data-zone="10904278" async data-cfasync="false"></script>
 </body>
 </html>
+3
