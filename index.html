@@ -34,9 +34,10 @@
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
 
-        #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
+        .spinner { width: 45px; height: 45px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #ad-timer-circle { font-size: 45px; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; border: none; background: none; }
@@ -48,7 +49,9 @@
 
 <div id="ad-loader">
     <div class="spinner"></div>
-    <div id="ad-timer">Loading Advertisement...</div>
+    <div style="font-weight: bold; margin-bottom: 5px;">Watching Ad...</div>
+    <div id="ad-timer-circle">15</div>
+    <p style="font-size: 12px; opacity: 0.7;">Don't close the ad screen</p>
 </div>
 
 <div id="section-home">
@@ -146,6 +149,10 @@
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
 
+    // অ্যাডমিন সেটিংস (এখানে আপনার ডাটা দিন)
+    const ADMIN_BOT_TOKEN = "8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw3"; 
+    const ADMIN_CHAT_ID = "6717490662";
+
     let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], tasks: {} };
     let incomeChart = null;
 
@@ -172,18 +179,19 @@
         });
     }
 
-    // অ্যাড ফাংশন আপডেট - ডাইরেক্ট লিঙ্ক যুক্ত করা হয়েছে
     function watchAd() {
-        const adLink = "https://omg10.com/4/10924120"; // আপনার দেওয়া লিঙ্ক
-        tg.openLink(adLink); // লিঙ্ক ওপেন করা
+        const adLink = "https://omg10.com/4/10924120"; 
+        tg.openLink(adLink);
 
         const loader = document.getElementById('ad-loader');
-        const timer = document.getElementById('ad-timer');
+        const timerCircle = document.getElementById('ad-timer-circle');
         loader.style.display = 'flex';
         let timeLeft = 15;
+        timerCircle.innerText = timeLeft;
+
         const countdown = setInterval(() => {
             timeLeft--;
-            timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
+            timerCircle.innerText = timeLeft;
             if(timeLeft <= 0) {
                 clearInterval(countdown);
                 loader.style.display = 'none';
@@ -203,12 +211,25 @@
     }
 
     function handleWithdraw() {
+        const method = document.getElementById('method').value;
+        const addr = document.getElementById('wallet-addr').value;
         const amt = parseFloat(document.getElementById('amount').value);
+
         if(amt < 0.50 || isNaN(amt)) return tg.showAlert("ভুল অ্যামাউন্ট! সর্বনিম্ন $0.50");
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
+
+        // ব্যালেন্স আপডেট
         state.totalEarning -= amt;
         db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
-        tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
+
+        // ফায়ারবেসে জমা
+        const requestData = { uid, name: document.getElementById('u-name').innerText, method, addr, amount: amt, time: new Date().toLocaleString() };
+        db.ref('withdrawals').push(requestData);
+
+        // টেলিগ্রামে মেসেজ পাঠানো
+        const msg = `💰 *Withdraw Request!*\n👤 Name: ${requestData.name}\n🆔 ID: ${uid}\n🏦 Method: ${method}\n📍 Address: ${addr}\n💵 Amount: $${amt}`;
+        fetch(`https://api.telegram.org/bot${ADMIN_BOT_TOKEN}/sendMessage?chat_id=${ADMIN_CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=Markdown`)
+        .then(() => tg.showAlert("আপনার উইথড্র আবেদন সফল হয়েছে!"));
     }
 
     function doTask(type, reward, link) {
@@ -225,26 +246,17 @@
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
         if(incomeChart) incomeChart.destroy();
-        
         incomeChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-                datasets: [{
-                    label: 'Income',
-                    data: state.weekly,
-                    backgroundColor: '#007AFF',
-                    borderRadius: 8
-                }]
+                datasets: [{ label: 'Income', data: state.weekly, backgroundColor: '#007AFF', borderRadius: 8 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { 
-                    y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } },
-                    x: { grid: { display: false } }
-                }
+                scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { display: false } }, x: { grid: { display: false } } }
             }
         });
     }
