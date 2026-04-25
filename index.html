@@ -30,7 +30,6 @@
         
         .task-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 12px; margin-bottom: 10px; border: 1px solid #eee; }
         .btn-check { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        .btn-check:disabled { background: #bbb; cursor: not-allowed; }
         
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
@@ -82,12 +81,12 @@
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-check-double"></i> Social Tasks</div>
         <div class="task-item">
-            <div><b>Join Channel</b><br><small>Reward: $0.03</small></div>
-            <button id="task-channel" class="btn-check" onclick="doTask('channel', 0.03, 'https://t.me/trustedbdincome1')">Check</button>
+            <div><b>Join Channel</b><br><small>Get Updates</small></div>
+            <button class="btn-check" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join</button>
         </div>
         <div class="task-item">
-            <div><b>Join Group</b><br><small>Reward: $0.02</small></div>
-            <button id="task-group" class="btn-check" onclick="doTask('group', 0.02, 'https://t.me/trustedbdincome1')">Check</button>
+            <div><b>Join Group</b><br><small>Support Group</small></div>
+            <button class="btn-check" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join</button>
         </div>
     </div>
     <div class="card">
@@ -147,7 +146,7 @@
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], completedTasks: {} };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], tasks: {} };
     let incomeChart = null;
 
     function init() {
@@ -166,17 +165,6 @@
                 state = { ...state, ...data };
                 document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
                 document.getElementById('ref-count-display').innerText = state.referrals || 0;
-                
-                // টাস্ক বাটন চেক
-                if(state.completedTasks?.channel) {
-                    document.getElementById('task-channel').disabled = true;
-                    document.getElementById('task-channel').innerText = "Claimed";
-                }
-                if(state.completedTasks?.group) {
-                    document.getElementById('task-group').disabled = true;
-                    document.getElementById('task-group').innerText = "Claimed";
-                }
-                
                 renderChart();
             } else {
                 renderChart();
@@ -222,30 +210,8 @@
         tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
     }
 
-    function doTask(type, reward, link) {
-        // যদি আগেই টাস্ক কমপ্লিট থাকে
-        if(state.completedTasks && state.completedTasks[type]) {
-            return tg.showAlert("You have already claimed this bonus!");
-        }
-
-        tg.openTelegramLink(link);
-        setTimeout(() => {
-            if(confirm("Confirm: Did you join?")) {
-                state.totalEarning += reward;
-                
-                // টাস্ক স্ট্যাটাস আপডেট
-                if(!state.completedTasks) state.completedTasks = {};
-                state.completedTasks[type] = true;
-
-                db.ref('users/' + uid).update({ 
-                    totalEarning: state.totalEarning,
-                    completedTasks: state.completedTasks
-                });
-                tg.showAlert("Bonus Added!");
-            }
-        }, 2000);
-    }
-
+    // doTask ফাংশনটি এখন আর সোশ্যাল টাস্কের জন্য ব্যবহার হচ্ছে না, তাই এটি শুধু রেখে দেওয়া হলো কিন্তু বোনাস লজিক নেই।
+    
     function renderChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
         if(incomeChart) incomeChart.destroy();
