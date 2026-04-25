@@ -280,10 +280,14 @@
         
         async function watchAd() {
             if (state.lastUsedIp && !state.cooldownUntil) {
-                 const newIp = await getIpAddress();
-                 if (newIp === state.lastUsedIp) { safeTgAlert('Please change your IP address to start the next round. Turn airplane mode on and off.'); return; } 
-                 else { state.lastUsedIp = null; saveState(); }
+    const newIp = await getIpAddress();
+    if (newIp === state.lastUsedIp) {
+        return safeTgAlert('Please change your IP address to start...');
+    } else {
+        state.lastUsedIp = null; saveState();
+    }
             }
+            
             allDOMElements.adLoaderOverlay.style.display = 'flex';
             const adFunction = window[`show_${config.MONETAG_ZONE_ID}`];
             if (typeof adFunction !== 'function') { safeTgAlert('Ad failed to load. Please try again.'); allDOMElements.adLoaderOverlay.style.display = 'none'; return; }
