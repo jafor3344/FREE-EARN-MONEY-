@@ -23,9 +23,12 @@
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; }
         .nav-item { border: none; background: none; color: #888; font-size: 11px; display: flex; flex-direction: column; align-items: center; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 24px; text-align: center; }
+        .modal-content { background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 24px; box-sizing: border-box; text-align: center; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
-        #adLimitText { font-size: 14px; color: #666; margin-bottom: 10px; display: block; }
+        .ad-info { font-size: 14px; color: #666; margin-bottom: 10px; display: block; text-align: center; }
+        
+        /* Bonus specific button */
+        .btn-bonus { background: #28a745; color: white; border: none; padding: 12px; width: 100%; border-radius: 12px; margin-top: 10px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -46,15 +49,15 @@
         </div>
     </div>
 
-    <span id="adLimitText">Daily Ads: <span id="dailyCount">0</span>/50</span>
-    <button class="btn-action" id="adBtn" onclick="watchAd()"><i class="fa-solid fa-play-circle"></i> Watch 15s Ad</button>
+    <span class="ad-info">Daily Ads: <span id="dailyCount">0</span>/50</span>
+    <button class="btn-action" onclick="watchAd()"><i class="fa-solid fa-play-circle"></i> Watch 15s Ad</button>
 </div>
 
 <nav class="nav-bar">
     <button class="nav-item" onclick="openModal('withdrawModal')"><i class="fa-solid fa-wallet"></i>Withdraw</button>
     <button class="nav-item" onclick="alert('No history found!')"><i class="fa-solid fa-history"></i>History</button>
     <button class="nav-item" onclick="copyRef()"><i class="fa-solid fa-user-plus"></i>Invite</button>
-    <button class="nav-item" onclick="showBonusTasks()"><i class="fa-solid fa-gift"></i>Bonus</button>
+    <button class="nav-item" onclick="openModal('bonusModal')"><i class="fa-solid fa-gift"></i>Bonus</button>
     <button class="nav-item" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')"><i class="fa-solid fa-headset"></i>Support</button>
 </nav>
 
@@ -74,6 +77,25 @@
     </div>
 </div>
 
+<div id="bonusModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0">Daily Bonus</h3>
+        <p style="font-size:13px; color:#666">চ্যানেল ও গ্রুপে জয়েন করে বোনাস নিন</p>
+        
+        <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <button class="btn-bonus" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join Channel ($0.03)</button>
+            <button class="btn-action" style="background:#007AFF; margin-top:5px; height: 35px; font-size:12px" onclick="claimBonus('channel')">Check Channel Join</button>
+        </div>
+
+        <div>
+            <button class="btn-bonus" style="background:#17a2b8" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join Group ($0.02)</button>
+            <button class="btn-action" style="background:#007AFF; margin-top:5px; height: 35px; font-size:12px" onclick="claimBonus('group')">Check Group Join</button>
+        </div>
+        
+        <button onclick="closeModal('bonusModal')" style="width:100%; border:none; background:none; color:red; margin-top:15px">Close</button>
+    </div>
+</div>
+
 <script>
     const config = {
         token: '8672799678:AAHcyb7TVwRWKEWi-Ej2nm11Z5zg-NJDkJw',
@@ -86,7 +108,7 @@
     const tg = window.Telegram.WebApp;
     const uid = tg.initDataUnsafe?.user?.id || "Dev_User";
 
-    let state = { totalEarning: 0, weekly: [0,0,0,0,0,0,0], dailyAds: 0, lastAdDate: "" };
+    let state = { totalEarning: 0, weekly: [0,0,0,0,0,0,0], dailyAds: 0, lastAdDate: "", bonusClaimed: { channel: false, group: false, date: "" } };
 
     function init() {
         db.ref('users/' + uid).on('value', (snap) => {
@@ -105,58 +127,63 @@
         if (state.lastAdDate !== today) {
             state.dailyAds = 0;
             state.lastAdDate = today;
-            db.ref('users/' + uid).update({ dailyAds: 0, lastAdDate: today });
+            // বোনাস প্রতিদিন একবার নেওয়ার জন্য রিসেট
+            if(state.bonusClaimed && state.bonusClaimed.date !== today) {
+                state.bonusClaimed = { channel: false, group: false, date: today };
+            }
+            db.ref('users/' + uid).update(state);
         }
     }
 
     function renderUI() {
-        document.getElementById('totalEarning').innerText = `$${state.totalEarning.toFixed(3)}`;
+        document.getElementById('totalEarning').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
         document.getElementById('dailyCount').innerText = state.dailyAds || 0;
         renderChart();
     }
 
-    // Monetag 15s Interstitial Ad Logic
     async function watchAd() {
-        if (state.dailyAds >= 50) {
-            alert("আপনার আজকের ৫০টি অ্যাড দেখার লিমিট শেষ!");
-            return;
-        }
-
-        // Monetag Interstitial Call
+        if ((state.dailyAds || 0) >= 50) return alert("Daily limit reached!");
         if (typeof show_10904278 === 'function') {
-            show_10904278().then(() => {
-                // অ্যাড সফলভাবে দেখা হলে রিওয়ার্ড যোগ হবে
-                addReward(0.003);
-            }).catch(err => {
-                alert("অ্যাড লোড হতে সমস্যা হচ্ছে, আবার চেষ্টা করুন।");
-            });
+            show_10904278().then(() => addReward(0.003));
         } else {
-            // Fallback for testing
             addReward(0.003);
-            alert("Ad Success! $0.003 যোগ করা হয়েছে।");
+            alert("Ad Success!");
         }
     }
 
     function addReward(amt) {
-        state.totalEarning += amt;
-        state.dailyAds += 1;
+        state.totalEarning = (state.totalEarning || 0) + amt;
+        state.dailyAds = (state.dailyAds || 0) + 1;
         const day = new Date().getDay();
         if(!state.weekly) state.weekly = [0,0,0,0,0,0,0];
         state.weekly[day] += amt;
         db.ref('users/' + uid).update(state);
     }
 
+    function claimBonus(type) {
+        const today = new Date().toLocaleDateString();
+        if(!state.bonusClaimed) state.bonusClaimed = { channel: false, group: false, date: today };
+
+        if (state.bonusClaimed[type]) {
+            alert("আপনি আজ এই বোনাসটি ইতিমধ্যে নিয়েছেন!");
+            return;
+        }
+
+        const reward = (type === 'channel') ? 0.03 : 0.02;
+        state.totalEarning += reward;
+        state.bonusClaimed[type] = true;
+        state.bonusClaimed.date = today;
+        
+        db.ref('users/' + uid).update(state);
+        alert(`অভিনন্দন! জয়েন করার জন্য $${reward} যোগ করা হয়েছে।`);
+    }
+
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
-        const meth = document.getElementById('method').value;
-        const wal = document.getElementById('wallet').value;
-        if(amt < 0.50) return alert("সর্বনিম্ন উইথড্র $0.50");
-        if(amt > state.totalEarning) return alert("ব্যালেন্স পর্যাপ্ত নয়!");
+        if(amt < 0.50 || amt > state.totalEarning) return alert("ভুল অ্যামাউন্ট অথবা ব্যালেন্স নেই!");
         state.totalEarning -= amt;
         db.ref('users/' + uid).update(state);
-        const msg = `Withdraw Success!\nUser: ${uid}\nMethod: ${meth}\nAmount: $${amt}\nWallet: ${wal}`;
-        fetch(`https://api.telegram.org/bot${config.token}/sendMessage?chat_id=${config.admin}&text=${encodeURIComponent(msg)}`);
-        alert("পেমেন্ট উইথড্র রিকোয়েস্ট সাকসেস ফুল!");
+        alert("Withdraw Successful!");
         closeModal('withdrawModal');
     }
 
@@ -167,12 +194,8 @@
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                datasets: [{
-                    data: state.weekly || [0,0,0,0,0,0,0],
-                    backgroundColor: '#5E5CE6',
-                    borderRadius: 6
-                }]
+                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+                datasets: [{ data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#5E5CE6', borderRadius: 6 }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
@@ -180,12 +203,7 @@
 
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
-        navigator.clipboard.writeText(link);
-        alert("Referral link copied!");
-    }
-
-    function showBonusTasks() {
-        tg.openTelegramLink('https://t.me/trustedbdincome1');
+        navigator.clipboard.writeText(link).then(() => alert("Referral link copied!"));
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
