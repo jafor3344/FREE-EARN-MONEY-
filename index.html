@@ -91,7 +91,7 @@
         </div>
         <div class="task-item">
             <div><b>Support Group</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedearn23')">Join</button>
+            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
         </div>
     </div>
     <div class="card">
@@ -221,8 +221,8 @@
                     
                     db.ref('users/' + startParam).transaction((u) => {
                         if (u) {
-                            u.totalEarning = (u.totalEarning || 0) + 0.02;
-                            u.referrals = (u.referrals || 0) + 1;
+                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.02;
+                            u.referrals = (parseInt(u.referrals) || 0) + 1;
                             if(!u.referList) u.referList = [];
                             u.referList.push({ name: name, id: uid });
                         }
@@ -238,9 +238,8 @@
                 const data = s.val();
                 if(data) {
                     state = { ...state, ...data };
-                    // এই অংশটি আপনার রেফারেল কাউন্ট রিয়েল-টাইমে আপডেট করবে
                     const refDisplay = document.getElementById('ref-count-display');
-                    if(refDisplay) refDisplay.innerText = state.referrals || 0;
+                    if(refDisplay) refDisplay.innerText = data.referrals || 0;
                     
                     document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
                     updateReferList(state.referList);
