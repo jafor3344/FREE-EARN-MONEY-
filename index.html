@@ -91,7 +91,7 @@
         </div>
         <div class="task-item">
             <div><b>Support Group</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedearn23')">Join</button>
+            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
         </div>
     </div>
     <div class="card">
@@ -177,7 +177,7 @@
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
-    const startParam = tg.initDataUnsafe?.start_param; // রেফারার আইডি
+    const startParam = tg.initDataUnsafe?.start_param; 
     const adminId = 6717490662; 
 
     let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], tasks: {} };
@@ -198,10 +198,10 @@
             loadAdminData();
         }
 
-        // ইউজার ডাটা চেক এবং রেফারেল বোনাস লজিক
+        // সংশোধিত ইউজার ডাটা চেক লজিক (যাতে ডাটা না হারায়)
         db.ref('users/' + uid).once('value', (snap) => {
             if (!snap.exists()) {
-                // নতুন ইউজার ডাটা তৈরি
+                // ডাটা না থাকলেই কেবল নতুন করে ইনিশিয়ালাইজ হবে
                 const initialData = {
                     totalEarning: 0,
                     referrals: 0,
@@ -210,7 +210,7 @@
                 };
                 
                 db.ref('users/' + uid).set(initialData).then(() => {
-                    // রেফারারকে বোনাস দেওয়া (০.০২$)
+                    // রেফারারকে বোনাস দেওয়া
                     if (startParam && startParam != uid) {
                         db.ref('users/' + startParam).transaction((u) => {
                             if (u) {
@@ -221,9 +221,12 @@
                         });
                     }
                 });
+            } else {
+                // যদি ডাটা আগে থেকেই থাকে, তবে শুধু নাম আপডেট হবে (যাতে বাকি ডাটা নিরাপদ থাকে)
+                db.ref('users/' + uid).update({ name: name });
             }
             
-            // রিয়েল টাইম ব্যালেন্স আপডেট
+            // ডাটাবেস থেকে লাইভ আপডেট নেওয়া
             db.ref('users/' + uid).on('value', (s) => {
                 const data = s.val();
                 if(data) {
