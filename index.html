@@ -125,6 +125,13 @@
         <small>Total Successful Invites</small>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
     </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-users"></i> Your Referrals</div>
+        <div id="user-refer-list" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
+            No referrals yet.
+        </div>
+    </div>
 </div>
 
 <div id="section-admin" style="display:none;" class="container">
@@ -162,6 +169,7 @@
 </nav>
 
 <script>
+    // আপনার নতুন Firebase Config এখানে দেওয়া হলো
     const firebaseConfig = {
         apiKey: "AIzaSyAW7q7L9xKvLP36bB7oYHqZy5Ou-7q0S68",
         authDomain: "fir-90b18.firebaseapp.com",
@@ -180,7 +188,7 @@
     const startParam = tg.initDataUnsafe?.start_param; 
     const adminId = 6717490662; 
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], tasks: {} };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0] };
     let incomeChart = null;
 
     function init() {
@@ -198,44 +206,62 @@
             loadAdminData();
         }
 
-        // সংশোধিত ইউজার ডাটা চেক লজিক (যাতে ডাটা না হারায়)
         db.ref('users/' + uid).once('value', (snap) => {
             if (!snap.exists()) {
-                // ডাটা না থাকলেই কেবল নতুন করে ইনিশিয়ালাইজ হবে
                 const initialData = {
                     totalEarning: 0,
                     referrals: 0,
                     weekly: [0, 0, 0, 0, 0, 0, 0],
-                    name: name
+                    name: name,
+                    joinedAt: new Date().toLocaleString()
                 };
                 
-                db.ref('users/' + uid).set(initialData).then(() => {
-                    // রেফারারকে বোনাস দেওয়া
-                    if (startParam && startParam != uid) {
-                        db.ref('users/' + startParam).transaction((u) => {
-                            if (u) {
-                                u.totalEarning = (u.totalEarning || 0) + 0.02;
-                                u.referrals = (u.referrals || 0) + 1;
-                            }
-                            return u;
-                        });
-                    }
-                });
+                // নতুন ইউজার জয়েন করলে বোনাস এবং রেফারেল লজিক
+                if (startParam && startParam != uid) {
+                    initialData.totalEarning = 0.02; // নতুন ইউজারের জন্য বোনাস
+                    
+                    db.ref('users/' + startParam).transaction((u) => {
+                        if (u) {
+                            u.totalEarning = (u.totalEarning || 0) + 0.02; // রেফারার পাবে ০.০২$
+                            u.referrals = (u.referrals || 0) + 1;
+                            
+                            // রেফারেল লিস্টে নাম যোগ করার জন্য
+                            if(!u.referList) u.referList = [];
+                            u.referList.push({ name: name, id: uid });
+                        }
+                        return u;
+                    });
+                }
+                db.ref('users/' + uid).set(initialData);
             } else {
-                // যদি ডাটা আগে থেকেই থাকে, তবে শুধু নাম আপডেট হবে (যাতে বাকি ডাটা নিরাপদ থাকে)
                 db.ref('users/' + uid).update({ name: name });
             }
             
-            // ডাটাবেস থেকে লাইভ আপডেট নেওয়া
             db.ref('users/' + uid).on('value', (s) => {
                 const data = s.val();
                 if(data) {
                     state = { ...state, ...data };
                     document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
                     document.getElementById('ref-count-display').innerText = state.referrals || 0;
+                    updateReferList(data.referList);
                     renderChart();
                 }
             });
+        });
+    }
+
+    function updateReferList(list) {
+        const listDiv = document.getElementById('user-refer-list');
+        if(!list || list.length === 0) {
+            listDiv.innerHTML = "No referrals yet.";
+            return;
+        }
+        listDiv.innerHTML = '';
+        list.forEach(item => {
+            listDiv.innerHTML += `<div class="admin-user-item">
+                <span>${item.name}</span>
+                <span class="user-id-badge">ID: ${item.id}</span>
+            </div>`;
         });
     }
 
@@ -252,7 +278,7 @@
                 
                 userListDiv.innerHTML += `
                     <div class="admin-user-item">
-                        <div>ID: <span class="user-id-badge">${uId}</span></div>
+                        <div>${uData.name || 'User'}: <span class="user-id-badge">${uId}</span></div>
                         <div class="user-bal-badge">$${uBal}</div>
                     </div>
                 `;
