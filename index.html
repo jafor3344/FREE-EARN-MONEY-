@@ -91,7 +91,7 @@
         </div>
         <div class="task-item">
             <div><b>Support Group</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/+Yzmy6WpJSWVmOWI1')">Join</button>
+            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedearn23')">Join</button>
         </div>
     </div>
     <div class="card">
@@ -120,7 +120,7 @@
     <br>
     <div class="card" style="text-align: center;">
         <div class="card-title">Referral Program</div>
-        <p>Invite friends and get $0.01 bonus!</p>
+        <p>Invite friends and get $0.02 bonus!</p>
         <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
         <small>Total Successful Invites</small>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
@@ -177,9 +177,10 @@
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
+    const startParam = tg.initDataUnsafe?.start_param; // রেফারার আইডি
     const adminId = 6717490662; 
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0.01, 0.05, 0.02, 0.08, 0.03, 0.04, 0.01], tasks: {} };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], tasks: {} };
     let incomeChart = null;
 
     function init() {
@@ -197,17 +198,41 @@
             loadAdminData();
         }
 
-        db.ref('users/' + uid).on('value', (snap) => {
-            const data = snap.val();
-            if(data) {
-                state = { ...state, ...data };
-                document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
-                document.getElementById('ref-count-display').innerText = state.referrals || 0;
-                renderChart();
-            } else {
-                db.ref('users/' + uid).set(state); 
-                renderChart();
+        // ইউজার ডাটা চেক এবং রেফারেল বোনাস লজিক
+        db.ref('users/' + uid).once('value', (snap) => {
+            if (!snap.exists()) {
+                // নতুন ইউজার ডাটা তৈরি
+                const initialData = {
+                    totalEarning: 0,
+                    referrals: 0,
+                    weekly: [0, 0, 0, 0, 0, 0, 0],
+                    name: name
+                };
+                
+                db.ref('users/' + uid).set(initialData).then(() => {
+                    // রেফারারকে বোনাস দেওয়া (০.০২$)
+                    if (startParam && startParam != uid) {
+                        db.ref('users/' + startParam).transaction((u) => {
+                            if (u) {
+                                u.totalEarning = (u.totalEarning || 0) + 0.02;
+                                u.referrals = (u.referrals || 0) + 1;
+                            }
+                            return u;
+                        });
+                    }
+                });
             }
+            
+            // রিয়েল টাইম ব্যালেন্স আপডেট
+            db.ref('users/' + uid).on('value', (s) => {
+                const data = s.val();
+                if(data) {
+                    state = { ...state, ...data };
+                    document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
+                    document.getElementById('ref-count-display').innerText = state.referrals || 0;
+                    renderChart();
+                }
+            });
         });
     }
 
@@ -260,8 +285,7 @@
             if(timeLeft <= 0) {
                 clearInterval(countdown);
                 loader.style.display = 'none';
-                state.totalEarning += 0.003;
-                db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+                db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
                 tg.showAlert("Success! You earned $0.003");
             }
         }, 1000);
@@ -287,8 +311,7 @@
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
         if(!addr) return tg.showAlert("Wallet address দিন!");
 
-        state.totalEarning -= amt;
-        db.ref('users/' + uid).update({ totalEarning: state.totalEarning });
+        db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) - amt);
         
         db.ref('withdrawals').push({
             userId: uid,
@@ -306,18 +329,10 @@
         const val = parseFloat(document.getElementById('adm-amt').value);
         if(!target || isNaN(val)) return tg.showAlert("Invalid Input");
         
-        db.ref('users/' + target).once('value').then(snap => {
-            if(snap.exists()){
-                let newBal = (snap.val().totalEarning || 0) + val;
-                db.ref('users/' + target).update({totalEarning: newBal});
-                tg.showAlert("Balance Updated!");
-            } else {
-                tg.showAlert("User not found!");
-            }
-        });
+        db.ref('users/' + target + '/totalEarning').transaction(c => (c || 0) + val);
+        tg.showAlert("Balance Updated!");
     }
 
-    // শুধুমাত্র জয়েন করার জন্য ফাংশন (কোনো রিওয়ার্ড যোগ হবে না)
     function doLinkTask(link) {
         tg.openTelegramLink(link);
     }
