@@ -91,7 +91,7 @@
         </div>
         <div class="task-item">
             <div><b>Support Group</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
+            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedearn23')">Join</button>
         </div>
     </div>
     <div class="card">
@@ -169,7 +169,6 @@
 </nav>
 
 <script>
-    // আপনার নতুন Firebase Config এখানে দেওয়া হলো
     const firebaseConfig = {
         apiKey: "AIzaSyCVhbUfVVx04SpVSSioBp6vw8oOwm3voug",
         authDomain: "telegram-mini-app-64ec3.firebaseapp.com",
@@ -189,7 +188,7 @@
     const startParam = tg.initDataUnsafe?.start_param; 
     const adminId = 6717490662; 
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0] };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], referList: [] };
     let incomeChart = null;
 
     function init() {
@@ -213,19 +212,17 @@
                     totalEarning: 0,
                     referrals: 0,
                     weekly: [0, 0, 0, 0, 0, 0, 0],
-                    name: name
+                    name: name,
+                    referList: []
                 };
                 
-                // নতুন ইউজার জয়েন করলে বোনাস এবং রেফারেল লজিক
                 if (startParam && startParam != uid) {
-                    initialData.totalEarning = 0.02; // নতুন ইউজারের জয়েন বোনাস
+                    initialData.totalEarning = 0.02;
                     
                     db.ref('users/' + startParam).transaction((u) => {
                         if (u) {
-                            u.totalEarning = (u.totalEarning || 0) + 0.02; // রেফারার পাবে ০.০২$
+                            u.totalEarning = (u.totalEarning || 0) + 0.02;
                             u.referrals = (u.referrals || 0) + 1;
-                            
-                            // রেফারেল লিস্টে নাম যোগ করার জন্য
                             if(!u.referList) u.referList = [];
                             u.referList.push({ name: name, id: uid });
                         }
@@ -241,9 +238,12 @@
                 const data = s.val();
                 if(data) {
                     state = { ...state, ...data };
+                    // এই অংশটি আপনার রেফারেল কাউন্ট রিয়েল-টাইমে আপডেট করবে
+                    const refDisplay = document.getElementById('ref-count-display');
+                    if(refDisplay) refDisplay.innerText = state.referrals || 0;
+                    
                     document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
-                    document.getElementById('ref-count-display').innerText = state.referrals || 0;
-                    updateReferList(data.referList);
+                    updateReferList(state.referList);
                     renderChart();
                 }
             });
@@ -252,6 +252,7 @@
 
     function updateReferList(list) {
         const listDiv = document.getElementById('user-refer-list');
+        if(!listDiv) return;
         if(!list || list.length === 0) {
             listDiv.innerHTML = "No referrals yet.";
             return;
@@ -268,8 +269,11 @@
     function loadAdminData() {
         db.ref('users').on('value', (snap) => {
             const userListDiv = document.getElementById('admin-user-list-container');
-            document.getElementById('stat-total-users').innerText = snap.numChildren();
+            if(document.getElementById('stat-total-users')) {
+                document.getElementById('stat-total-users').innerText = snap.numChildren();
+            }
             
+            if(!userListDiv) return;
             userListDiv.innerHTML = ''; 
             snap.forEach(child => {
                 const uData = child.val();
@@ -287,6 +291,7 @@
 
         db.ref('withdrawals').on('value', (snap) => {
             const list = document.getElementById('admin-w-list');
+            if(!list) return;
             list.innerHTML = '';
             if(!snap.exists()) list.innerHTML = "No pending withdrawals.";
             snap.forEach(child => {
@@ -367,7 +372,9 @@
     }
 
     function renderChart() {
-        const ctx = document.getElementById('incomeChart').getContext('2d');
+        const chartElem = document.getElementById('incomeChart');
+        if(!chartElem) return;
+        const ctx = chartElem.getContext('2d');
         if(incomeChart) incomeChart.destroy();
         
         incomeChart = new Chart(ctx, {
