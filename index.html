@@ -47,6 +47,7 @@
         .user-id-badge { background: #333; color: white; padding: 2px 8px; border-radius: 5px; font-size: 11px; }
         .user-bal-badge { color: #007AFF; font-weight: bold; font-size: 14px; }
 
+        /* Wallet Grid Custom CSS */
         .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .method-card { background: #fff; border: 1.5px solid #eee; border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
         .method-card.active { border-color: var(--primary); background: #f0f7ff; }
@@ -114,15 +115,27 @@
         
         <div class="method-grid">
             <div class="method-card" onclick="setWithdrawMethod('bKash', 'Enter bKash Number', this)">
-                <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/bkash.png" alt="bKash">
+                <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/bkash.png">
                 <span>bKash</span>
             </div>
             <div class="method-card" onclick="setWithdrawMethod('Binance', 'Enter Binance UID', this)">
-                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance">
+                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png">
                 <span>Binance</span>
             </div>
+            <div class="method-card" onclick="setWithdrawMethod('USDT', 'Enter USDT Address (TRC20)', this)">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png">
+                <span>USDT</span>
+            </div>
+            <div class="method-card" onclick="setWithdrawMethod('Litecoin', 'Enter LTC Address', this)">
+                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png">
+                <span>Litecoin</span>
+            </div>
+            <div class="method-card" onclick="setWithdrawMethod('WebMoney', 'Enter WMZ Purse', this)">
+                <img src="https://www.webmoney.ru/img/icons/wm_logo_80.png">
+                <span>WebMoney</span>
+            </div>
             <div class="method-card" onclick="setWithdrawMethod('Nagad', 'Enter Nagad Number', this)">
-                <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/nagad.png" alt="Nagad">
+                <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/nagad.png">
                 <span>Nagad</span>
             </div>
         </div>
