@@ -35,8 +35,8 @@
         .method-card img { width: 35px; height: 35px; margin-bottom: 8px; border-radius: 8px; object-fit: contain; }
         .method-card span { display: block; font-size: 11px; font-weight: 600; color: #444; }
 
-        /* History Items */
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
+        /* History & Refer List */
+        .history-item, .refer-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
         .status-badge { background: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
@@ -50,9 +50,6 @@
         .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; border: none; background: none; }
         .nav-item.active { color: var(--primary); }
         .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
-        
-        .admin-user-item { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 12px; border-radius: 10px; margin-bottom: 8px; border: 1px solid #eee; font-size: 13px; }
-        .user-id-badge { background: #333; color: white; padding: 2px 8px; border-radius: 5px; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -104,27 +101,27 @@
         
         <div class="method-grid">
             <div class="method-card" onclick="selectMethod('bKash', 'Enter bKash Number', this)">
-                <img src="https://id-com.github.io/logo/bkash.png" alt="b">
+                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Bkash_logo.svg/200px-Bkash_logo.svg.png" alt="bKash">
                 <span>bKash</span>
             </div>
             <div class="method-card" onclick="selectMethod('Nagad', 'Enter Nagad Number', this)">
-                <img src="https://id-com.github.io/logo/nagad.png" alt="n">
+                <img src="https://upload.wikimedia.org/wikipedia/bn/thumb/c/c4/Nagad_Logo.svg/240px-Nagad_Logo.svg.png" alt="Nagad">
                 <span>Nagad</span>
             </div>
             <div class="method-card" onclick="selectMethod('Binance', 'Enter Binance UID', this)">
-                <img src="https://id-com.github.io/logo/binance.png" alt="b">
+                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance">
                 <span>Binance</span>
             </div>
             <div class="method-card" onclick="selectMethod('USDT', 'Enter USDT Address', this)">
-                <img src="https://id-com.github.io/logo/usdt.png" alt="u">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT">
                 <span>USDT</span>
             </div>
             <div class="method-card" onclick="selectMethod('Litecoin', 'Enter LTC Address', this)">
-                <img src="https://id-com.github.io/logo/litecoin.png" alt="l">
+                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png" alt="Litecoin">
                 <span>Litecoin</span>
             </div>
             <div class="method-card" onclick="selectMethod('WebMoney', 'Enter WMZ Purse', this)">
-                <img src="https://id-com.github.io/logo/webmoney.png" alt="w">
+                <img src="https://www.webmoney.ru/img/icons/wm_logo_80.png" alt="WebMoney">
                 <span>WebMoney</span>
             </div>
         </div>
@@ -146,16 +143,22 @@
     <br>
     <div class="card" style="text-align: center;">
         <div class="card-title">Referral Program</div>
-        <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
-        <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
+        <div id="ref-count-display" style="font-size: 40px; font-weight: bold; color: var(--primary);">0</div>
+        <p style="font-size: 12px; color: #888; margin-top: -10px;">Total Successful Invites</p>
+        <button class="btn-main" style="margin-top:10px;" onclick="copyRef()">Copy Link</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-users-viewfinder"></i> Your Referral List</div>
+        <div id="refer-list"><p style="text-align: center; color: #888; font-size: 12px;">No referrals found</p></div>
     </div>
 </div>
 
 <div id="section-admin" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title">All Users & Balances</div>
-        <div id="admin-user-list-container">Loading...</div>
+        <div class="card-title">User Management</div>
+        <div id="admin-user-list">Loading...</div>
     </div>
 </div>
 
@@ -174,8 +177,7 @@
         projectId: "telegram-mini-app-64ec3",
         storageBucket: "telegram-mini-app-64ec3.firebasestorage.app",
         messagingSenderId: "925430758099",
-        appId: "1:925430758099:web:773f1e100da1f80a12b226",
-        measurementId: "G-7FKCNHTBJ5"
+        appId: "1:925430758099:web:773f1e100da1f80a12b226"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -183,7 +185,6 @@
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
-    const startParam = tg.initDataUnsafe?.start_param;
     const adminId = 6717490662;
 
     let state = { totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], referList: [] };
@@ -203,10 +204,7 @@
         document.getElementById('u-name').innerText = name;
         document.getElementById('u-pic').src = user?.photo_url || `https://ui-avatars.com/api/?name=${name}&background=007AFF&color=fff`;
 
-        if(uid == adminId) {
-            document.getElementById('admin-btn').style.display = 'block';
-            loadAdminData();
-        }
+        if(uid == adminId) document.getElementById('admin-btn').style.display = 'block';
 
         db.ref('users/' + uid).on('value', (snap) => {
             if (!snap.exists()) {
@@ -218,21 +216,30 @@
                 document.getElementById('bal').innerText = `$${(data.totalEarning || 0).toFixed(3)}`;
                 document.getElementById('ref-count-display').innerText = data.referrals || 0;
                 renderChart();
+                updateReferList(data.referList);
             }
         });
         loadHistory();
+        if(uid == adminId) loadAdminData();
+    }
+
+    function updateReferList(list) {
+        const container = document.getElementById('refer-list');
+        if(!list) return;
+        container.innerHTML = '';
+        Object.keys(list).forEach(key => {
+            container.innerHTML += `<div class="refer-item"><span>ID: ${key}</span><span class="status-badge">Joined</span></div>`;
+        });
     }
 
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
         const addr = document.getElementById('wallet-addr').value;
-        if(amt < 10) return tg.showAlert("Minimum withdrawal is $10.00");
+        if(amt < 10) return tg.showAlert("Minimum $10.00");
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
-        if(!addr) return tg.showAlert("Enter wallet info!");
-
+        
         db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) - amt);
-        const req = { method: currentMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString() };
-        db.ref('users/' + uid + '/history').push(req);
+        db.ref('users/' + uid + '/history').push({ method: currentMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString() });
         tg.showAlert("Withdrawal Successful!");
     }
 
@@ -253,20 +260,19 @@
 
     function loadAdminData() {
         db.ref('users').on('value', (snap) => {
-            const container = document.getElementById('admin-user-list-container');
+            const container = document.getElementById('admin-user-list');
             container.innerHTML = '';
             snap.forEach(child => {
                 const u = child.val();
-                container.innerHTML += `<div class="admin-user-item"><span>${u.name}</span><b class="user-id-badge">$${(u.totalEarning || 0).toFixed(2)}</b></div>`;
+                container.innerHTML += `<div class="history-item"><span>${u.name}</span><b>$${(u.totalEarning || 0).toFixed(2)}</b></div>`;
             });
         });
     }
 
     function watchAd() {
-        const loader = document.getElementById('ad-loader');
-        loader.style.display = 'flex';
+        document.getElementById('ad-loader').style.display = 'flex';
         setTimeout(() => {
-            loader.style.display = 'none';
+            document.getElementById('ad-loader').style.display = 'none';
             db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
             tg.showAlert("Earned $0.003");
         }, 5000);
@@ -293,7 +299,7 @@
 
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
-        navigator.clipboard.writeText(link).then(() => tg.showAlert("Copied!"));
+        navigator.clipboard.writeText(link).then(() => tg.showAlert("Link Copied!"));
     }
 
     tg.ready();
