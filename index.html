@@ -32,15 +32,15 @@
         .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .method-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
         .method-card.active { border: 2px solid var(--primary); background: #f0f7ff; }
-        .method-card img { width: 35px; height: 35px; margin-bottom: 8px; border-radius: 8px; }
+        .method-card img { width: 35px; height: 35px; margin-bottom: 8px; border-radius: 8px; object-fit: contain; }
         .method-card span { display: block; font-size: 11px; font-weight: 600; color: #444; }
+
+        /* History Items */
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
+        .status-badge { background: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
-
-        /* Success History Items */
-        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
-        .status-badge { background: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 
         #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
@@ -64,24 +64,20 @@
 
 <div id="section-home">
     <div class="profile-header">
-        <img id="u-pic" class="user-pic" src="https://ui-avatars.com/api/?name=User&background=007AFF&color=fff" alt="User">
+        <img id="u-pic" class="user-pic" src="" alt="User">
         <div class="user-info-text">
             <span class="user-name" id="u-name">Loading...</span>
             <span class="user-status">● Active Member</span>
         </div>
     </div>
-
     <div class="header-balance">
         <div class="balance-title">Main Balance</div>
         <div class="balance-val" id="bal">$0.000</div>
     </div>
-
     <div class="container">
         <div class="card">
             <div class="card-title"><i class="fa-solid fa-chart-line"></i> Income Status</div>
-            <div style="height: 180px; width: 100%;">
-                <canvas id="incomeChart"></canvas>
-            </div>
+            <div style="height: 180px; width: 100%;"><canvas id="incomeChart"></canvas></div>
         </div>
         <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-circle-play"></i> START EARNING</button>
         <button id="admin-btn" class="btn-main" style="display:none; margin-top: 10px; background: #333;" onclick="showSection('admin')">ADMIN PANEL</button>
@@ -92,14 +88,7 @@
     <br>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-link"></i> Channel Tasks</div>
-        <div class="task-item">
-            <div><b>Official Channel</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
-        </div>
-        <div class="task-item">
-            <div><b>Support Group</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
-        </div>
+        <button class="btn-main" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join Channel</button>
     </div>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
@@ -111,48 +100,45 @@
     <br>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cash Out</div>
-        <p style="font-size: 12px; color: #666;">Minimum: <b>$10.00</b> | Fee: <b>$2.00</b></p>
+        <p style="font-size: 12px; color: #666;">Minimum withdrawal is $10.00 for all methods.</p>
         
         <div class="method-grid">
-            <div class="method-card" onclick="selectMethod('bKash', 'Enter bKash Number')">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_xU8v7i3-V_60rC8YcR-n_j_Z7Gf9i5_qtg&s" alt="bKash">
+            <div class="method-card" onclick="selectMethod('bKash', 'Enter bKash Number', this)">
+                <img src="https://id-com.github.io/logo/bkash.png" alt="b">
                 <span>bKash</span>
             </div>
-            <div class="method-card" onclick="selectMethod('Nagad', 'Enter Nagad Number')">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_xU8v7i3-V_60rC8YcR-n_j_Z7Gf9i5_qtg&s" alt="Nagad">
+            <div class="method-card" onclick="selectMethod('Nagad', 'Enter Nagad Number', this)">
+                <img src="https://id-com.github.io/logo/nagad.png" alt="n">
                 <span>Nagad</span>
             </div>
-            <div class="method-card" onclick="selectMethod('Binance', 'Enter Binance UID')">
-                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance">
+            <div class="method-card" onclick="selectMethod('Binance', 'Enter Binance UID', this)">
+                <img src="https://id-com.github.io/logo/binance.png" alt="b">
                 <span>Binance</span>
             </div>
-            <div class="method-card" onclick="selectMethod('USDT', 'Enter USDT Wallet Address')">
-                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT">
+            <div class="method-card" onclick="selectMethod('USDT', 'Enter USDT Address', this)">
+                <img src="https://id-com.github.io/logo/usdt.png" alt="u">
                 <span>USDT</span>
             </div>
-            <div class="method-card" onclick="selectMethod('Litecoin', 'Enter Litecoin Address')">
-                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png" alt="Litecoin">
+            <div class="method-card" onclick="selectMethod('Litecoin', 'Enter LTC Address', this)">
+                <img src="https://id-com.github.io/logo/litecoin.png" alt="l">
                 <span>Litecoin</span>
             </div>
-            <div class="method-card" onclick="selectMethod('WebMoney', 'Enter WebMoney WMZ')">
-                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-Z-iF4W0P-D_oN-2fGf9i5_qtg&s" alt="WebMoney">
+            <div class="method-card" onclick="selectMethod('WebMoney', 'Enter WMZ Purse', this)">
+                <img src="https://id-com.github.io/logo/webmoney.png" alt="w">
                 <span>WebMoney</span>
             </div>
         </div>
 
         <div id="withdraw-panel" style="display:none;">
             <input type="text" class="withdraw-input" id="wallet-addr" placeholder="Wallet Information">
-            <input type="number" class="withdraw-input" id="amount" placeholder="Amount (e.g. 10.00)">
-            <p id="fee-notice" style="font-size: 11px; color: #ff3b30; margin: 0 5px 10px;">* $2.00 fee will be deducted. You will receive $8.00.</p>
+            <input type="number" class="withdraw-input" id="amount" placeholder="Amount (Min $10.00)">
             <button class="btn-main" onclick="handleWithdraw()">Withdraw Now</button>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Success Withdrawals</div>
-        <div id="history-list">
-            <p style="text-align: center; color: #888; font-size: 12px;">No history available</p>
-        </div>
+        <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Withdrawal History</div>
+        <div id="history-list"><p style="text-align: center; color: #888; font-size: 12px;">No history available</p></div>
     </div>
 </div>
 
@@ -160,24 +146,16 @@
     <br>
     <div class="card" style="text-align: center;">
         <div class="card-title">Referral Program</div>
-        <p>Invite friends and get $0.02 bonus!</p>
         <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
-        <small>Total Successful Invites</small>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
     </div>
 </div>
 
 <div id="section-admin" style="display:none;" class="container">
     <br>
-    <div class="card" style="border: 2px solid #333;">
-        <div class="card-title">Platform Stats</div>
-        <p>Total Registered Users: <b id="stat-total-users">0</b></p>
-    </div>
     <div class="card">
-        <div class="card-title">Add Money to User</div>
-        <input type="text" id="adm-uid" class="withdraw-input" placeholder="User ID">
-        <input type="number" id="adm-amt" class="withdraw-input" placeholder="Amount">
-        <button class="btn-main" onclick="adminAddBalance()">Add Balance</button>
+        <div class="card-title">All Users & Balances</div>
+        <div id="admin-user-list-container">Loading...</div>
     </div>
 </div>
 
@@ -205,33 +183,25 @@
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
-    const startParam = tg.initDataUnsafe?.start_param; 
-    const adminId = 6717490662; 
+    const startParam = tg.initDataUnsafe?.start_param;
+    const adminId = 6717490662;
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], referList: [] };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], referList: [] };
     let currentMethod = '';
     let incomeChart = null;
 
-    function selectMethod(method, placeholder) {
+    function selectMethod(method, placeholder, el) {
         currentMethod = method;
         document.getElementById('withdraw-panel').style.display = 'block';
         document.getElementById('wallet-addr').placeholder = placeholder;
-        
-        document.querySelectorAll('.method-card').forEach(c => {
-            c.classList.remove('active');
-            if(c.querySelector('span').innerText === method) c.classList.add('active');
-        });
+        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
     }
 
     function init() {
         const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "Guest User";
         document.getElementById('u-name').innerText = name;
-        
-        if(user && user.photo_url) {
-            document.getElementById('u-pic').src = user.photo_url;
-        } else {
-            document.getElementById('u-pic').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007AFF&color=fff`;
-        }
+        document.getElementById('u-pic').src = user?.photo_url || `https://ui-avatars.com/api/?name=${name}&background=007AFF&color=fff`;
 
         if(uid == adminId) {
             document.getElementById('admin-btn').style.display = 'block';
@@ -240,8 +210,7 @@
 
         db.ref('users/' + uid).on('value', (snap) => {
             if (!snap.exists()) {
-                const initialData = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], name: name };
-                db.ref('users/' + uid).set(initialData);
+                db.ref('users/' + uid).set({ totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], name: name });
             }
             const data = snap.val();
             if(data) {
@@ -257,33 +226,14 @@
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
         const addr = document.getElementById('wallet-addr').value;
-
-        if(!currentMethod) return tg.showAlert("Please select a method!");
-        if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Minimum withdrawal is $10.00!");
+        if(amt < 10) return tg.showAlert("Minimum withdrawal is $10.00");
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
-        if(!addr) return tg.showAlert("Enter wallet information!");
-
-        const fee = 2.00;
-        const finalReceive = amt - fee;
+        if(!addr) return tg.showAlert("Enter wallet info!");
 
         db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) - amt);
-        
-        const request = {
-            userId: uid,
-            amount: amt,
-            receive: finalReceive,
-            method: currentMethod,
-            wallet: addr,
-            status: 'Success',
-            time: new Date().toLocaleString()
-        };
-
-        db.ref('withdrawals').push(request);
-        db.ref('users/' + uid + '/history').push(request);
-        
-        tg.showAlert(`Withdrawal successful! You will receive $${finalReceive}.`);
-        document.getElementById('amount').value = '';
-        document.getElementById('wallet-addr').value = '';
+        const req = { method: currentMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString() };
+        db.ref('users/' + uid + '/history').push(req);
+        tg.showAlert("Withdrawal Successful!");
     }
 
     function loadHistory() {
@@ -293,69 +243,57 @@
             list.innerHTML = '';
             snap.forEach(child => {
                 const h = child.val();
-                list.innerHTML += `
-                    <div class="history-item">
-                        <div>
-                            <b>${h.method} Withdrawal</b><br>
-                            <small>${h.time}</small>
-                        </div>
-                        <div style="text-align:right;">
-                            <b style="color:var(--primary);">$${h.amount.toFixed(2)}</b><br>
-                            <span class="status-badge">Success</span>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="history-item">
+                    <div><b>${h.method}</b><br><small>${h.time}</small></div>
+                    <div style="text-align:right;"><b style="color:var(--primary);">$${h.amount.toFixed(2)}</b><br><span class="status-badge">Success</span></div>
+                </div>`;
             });
         });
     }
 
     function loadAdminData() {
         db.ref('users').on('value', (snap) => {
-            if(document.getElementById('stat-total-users')) document.getElementById('stat-total-users').innerText = snap.numChildren();
+            const container = document.getElementById('admin-user-list-container');
+            container.innerHTML = '';
+            snap.forEach(child => {
+                const u = child.val();
+                container.innerHTML += `<div class="admin-user-item"><span>${u.name}</span><b class="user-id-badge">$${(u.totalEarning || 0).toFixed(2)}</b></div>`;
+            });
         });
     }
 
     function watchAd() {
-        const adLink = "https://omg10.com/4/10924120"; 
-        tg.openLink(adLink); 
         const loader = document.getElementById('ad-loader');
         loader.style.display = 'flex';
         setTimeout(() => {
             loader.style.display = 'none';
             db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
-            tg.showAlert("Success! You earned $0.003");
-        }, 15000);
+            tg.showAlert("Earned $0.003");
+        }, 5000);
     }
 
     function showSection(id, el) {
-        ['home', 'task', 'refer', 'wallet', 'admin'].forEach(s => {
-            const element = document.getElementById('section-' + s);
-            if(element) element.style.display = 'none';
-        });
+        ['home', 'task', 'refer', 'wallet', 'admin'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
         document.getElementById('section-' + id).style.display = 'block';
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        if(el) el.classList.add('active');
+        if(el) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
     }
 
     function renderChart() {
-        const chartElem = document.getElementById('incomeChart');
-        if(!chartElem) return;
-        const ctx = chartElem.getContext('2d');
+        const ctx = document.getElementById('incomeChart').getContext('2d');
         if(incomeChart) incomeChart.destroy();
         incomeChart = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-                datasets: [{ label: 'Income', data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 8 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, display: false }, x: { grid: { display: false } } }
-            }
+            data: { labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], datasets: [{ label: 'Income', data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 8 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
     }
 
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
-        navigator.clipboard.writeText(link).then(() => tg.showAlert("Ref Link Copied!"));
+        navigator.clipboard.writeText(link).then(() => tg.showAlert("Copied!"));
     }
 
     tg.ready();
