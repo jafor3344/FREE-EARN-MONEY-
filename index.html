@@ -102,14 +102,14 @@
     </div>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
-        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.003)</button>
+        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.10)</button>
     </div>
 </div>
 
 <div id="section-wallet" style="display:none;" class="container">
     <br>
     <div class="withdraw-notice">
-        <i class="fa-solid fa-circle-info"></i> $2 will be deducted if you withdraw $10.
+        <i class="fa-solid fa-circle-info"></i> $2 will be deducted if you withdraw $100.
     </div>
 
     <div class="card">
@@ -260,11 +260,11 @@
                 };
                 
                 if (startParam && startParam != uid) {
-                    initialData.totalEarning = 0.50; 
+                    // Corrected Transaction Logic for Referrer
                     db.ref('users/' + startParam).transaction((u) => {
                         if (u) {
-                            u.totalEarning = (u.totalEarning || 0) + 0.50;
-                            u.referrals = (u.referrals || 0) + 1;
+                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.50;
+                            u.referrals = (parseInt(u.referrals) || 0) + 1;
                             if(!u.referList) u.referList = [];
                             u.referList.push({ name: name, id: uid });
                         }
@@ -310,7 +310,7 @@
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
         if(!addr) return tg.showAlert("Please enter your wallet address!");
 
-        db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) - amt);
+        db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) - amt);
         
         db.ref('withdrawals').push({
             userId: uid,
@@ -384,7 +384,7 @@
                 userListDiv.innerHTML += `
                     <div class="admin-user-item">
                         <div>${uData.name || 'User'}: <span class="user-id-badge">${child.key}</span></div>
-                        <div class="user-bal-badge">$${(uData.totalEarning || 0).toFixed(3)}</div>
+                        <div class="user-bal-badge">$${(parseFloat(uData.totalEarning) || 0).toFixed(3)}</div>
                     </div>
                 `;
             });
@@ -413,15 +413,16 @@
         const loader = document.getElementById('ad-loader');
         const timer = document.getElementById('ad-timer');
         loader.style.display = 'flex';
-        let timeLeft = 15;
+        let timeLeft = 25; // Updated to 25 seconds
         const countdown = setInterval(() => {
             timeLeft--;
             timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
             if(timeLeft <= 0) {
                 clearInterval(countdown);
                 loader.style.display = 'none';
-                db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
-                tg.showAlert("Success! You earned $0.003");
+                // Updated reward to $0.10
+                db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
+                tg.showAlert("Success! You earned $0.10");
             }
         }, 1000);
     }
@@ -441,7 +442,7 @@
         const target = document.getElementById('adm-uid').value;
         const val = parseFloat(document.getElementById('adm-amt').value);
         if(!target || isNaN(val)) return tg.showAlert("Invalid Input");
-        db.ref('users/' + target + '/totalEarning').transaction(c => (c || 0) + val);
+        db.ref('users/' + target + '/totalEarning').transaction(c => (parseFloat(c) || 0) + val);
         tg.showAlert("Balance Updated!");
     }
 
@@ -457,7 +458,6 @@
         incomeChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
                 labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
                 datasets: [{
                     label: 'Income',
