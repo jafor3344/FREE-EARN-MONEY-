@@ -14,14 +14,12 @@
         :root { --primary: #007AFF; --bg: #F2F4F7; --card: #FFFFFF; --text: #1C1C1E; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
         
-        /* Profile Header */
         .profile-header { display: flex; align-items: center; gap: 15px; padding: 20px; background: var(--card); margin-bottom: 1px; border-radius: 0 0 20px 20px; }
         .user-pic { width: 50px; height: 50px; border-radius: 50%; background: #ddd; object-fit: cover; border: 2px solid var(--primary); display: block; }
         .user-info-text { display: flex; flex-direction: column; }
         .user-name { font-weight: 800; font-size: 18px; color: var(--text); }
         .user-status { font-size: 12px; color: #4CAF50; font-weight: bold; }
 
-        /* Balance Area */
         .header-balance { background: var(--primary); color: white; padding: 25px 20px; border-radius: 20px; text-align: center; margin: 15px; }
         .balance-val { font-size: 38px; font-weight: 800; margin: 5px 0; }
         
@@ -29,14 +27,13 @@
         .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         
-        /* Wallet Grid */
+        /* Wallet Grid - Image Fix */
         .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .method-card { background: #fff; border: 1.5px solid #eee; border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
         .method-card.active { border-color: var(--primary); background: #f0f7ff; }
-        .method-card img { width: 40px; height: 40px; margin-bottom: 8px; object-fit: contain; }
+        .method-card img { width: 40px; height: 40px; margin-bottom: 8px; object-fit: contain; display: inline-block; }
         .method-card span { display: block; font-size: 11px; font-weight: 600; color: #444; }
 
-        /* List Items */
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
         .list-left { display: flex; align-items: center; gap: 12px; }
         .list-left img { width: 30px; height: 30px; border-radius: 50%; }
@@ -57,7 +54,7 @@
     <div class="profile-header">
         <img id="u-pic" class="user-pic" src="" alt="User">
         <div class="user-info-text">
-            <span class="user-name" id="u-name">Loading...</span>
+            <span class="user-name" id="u-name">User</span>
             <span class="user-status">● Active Member</span>
         </div>
     </div>
@@ -87,7 +84,7 @@
     <br>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-wallet"></i> Cash Out</div>
-        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Minimum withdrawal is $10.00</p>
+        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Minimum withdrawal is $10.00</p>
         <div class="method-grid">
             <div class="method-card" onclick="selectMethod('bKash', 'Enter bKash Number', this)">
                 <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/bkash.png">
@@ -101,11 +98,11 @@
                 <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png">
                 <span>Binance</span>
             </div>
-            <div class="method-card" onclick="selectMethod('USDT', 'Enter Address', this)">
+            <div class="method-card" onclick="selectMethod('USDT', 'Enter TRC20 Address', this)">
                 <img src="https://cryptologos.cc/logos/tether-usdt-logo.png">
                 <span>USDT</span>
             </div>
-            <div class="method-card" onclick="selectMethod('Litecoin', 'Enter Address', this)">
+            <div class="method-card" onclick="selectMethod('Litecoin', 'Enter LTC Address', this)">
                 <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png">
                 <span>Litecoin</span>
             </div>
@@ -121,7 +118,7 @@
         </div>
     </div>
     <div class="card">
-        <div class="card-title">History</div>
+        <div class="card-title">Withdrawal History</div>
         <div id="history-list"></div>
     </div>
 </div>
@@ -129,13 +126,13 @@
 <div id="section-refer" style="display:none;" class="container">
     <br>
     <div class="card" style="text-align: center;">
-        <div class="card-title">Refer Program</div>
+        <div class="card-title">Referral Program</div>
         <div id="ref-count-display" style="font-size: 38px; font-weight: bold; color: var(--primary);">0</div>
-        <p>Bonus $0.30 per refer</p>
-        <button class="btn-main" onclick="copyRef()">Copy link</button>
+        <p>Bonus: $0.30 per refer</p>
+        <button class="btn-main" onclick="copyRef()">Copy Referral Link</button>
     </div>
     <div class="card">
-        <div class="card-title">Referral List</div>
+        <div class="card-title">Your Referral List</div>
         <div id="refer-list-data"></div>
     </div>
 </div>
@@ -143,11 +140,15 @@
 <div id="section-admin" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title">Admin Dashboard</div>
-        <input type="text" id="adm-uid" class="withdraw-input" placeholder="User ID">
-        <input type="number" id="adm-amt" class="withdraw-input" placeholder="Amount">
-        <button class="btn-main" onclick="adminAddBalance()">Add Balance</button>
-        <div id="admin-user-list" style="margin-top:20px; font-size:12px;"></div>
+        <div class="card-title">Admin Controls</div>
+        <div id="admin-stats" style="font-size: 14px; margin-bottom: 15px; color: #555;">Loading stats...</div>
+        <input type="text" id="adm-uid" class="withdraw-input" placeholder="Target User ID">
+        <input type="number" id="adm-amt" class="withdraw-input" placeholder="Amount to Add">
+        <button class="btn-main" onclick="adminAddBalance()">Update Balance</button>
+    </div>
+    <div class="card">
+        <div class="card-title">Manage All Users</div>
+        <div id="admin-user-list" style="max-height: 400px; overflow-y: auto; font-size: 12px;"></div>
     </div>
 </div>
 
@@ -218,7 +219,7 @@
 
     function watchAd() {
         db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
-        tg.showAlert("Earned $0.003");
+        tg.showAlert("Task Complete! Earned $0.003");
     }
 
     function selectMethod(m, p, el) {
@@ -232,12 +233,14 @@
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
         const addr = document.getElementById('wallet-addr').value;
-        if(amt < 10) return tg.showAlert("Min $10!");
+        if(amt < 10) return tg.showAlert("Min $10 required!");
+        if(amt > state.totalEarning) return tg.showAlert("Insufficient Balance!");
+        
         db.ref('users/' + uid + '/totalEarning').transaction(c => c - amt);
         db.ref('users/' + uid + '/history').push({
             method: selectedMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString()
         });
-        tg.showAlert("Withdraw Success!");
+        tg.showAlert("Withdrawal successful!");
     }
 
     function renderReferList(list) {
@@ -247,8 +250,8 @@
         list.forEach(r => {
             div.innerHTML += `<div class="list-item">
                 <div class="list-left">
-                    <img src="https://ui-avatars.com/api/?name=${r.name}">
-                    <div><b>${r.name}</b><br><small>ID: ${r.id}</small></div>
+                    <img src="https://ui-avatars.com/api/?name=${r.name}&background=random">
+                    <div><b>${r.name}</b><br><small>UID: ${r.id}</small></div>
                 </div>
                 <span class="status-badge">Joined</span>
             </div>`;
@@ -263,7 +266,7 @@
                 const h = c.val();
                 div.innerHTML += `<div class="list-item">
                     <div><b>${h.method}</b><br><small>${h.time}</small></div>
-                    <div style="text-align:right;"><b>$${h.amount}</b><br><span class="status-badge">Success</span></div>
+                    <div style="text-align:right;"><b>$${h.amount.toFixed(2)}</b><br><span class="status-badge">Success</span></div>
                 </div>`;
             });
         });
@@ -276,7 +279,7 @@
             type: 'bar',
             data: {
                 labels: ['S','M','T','W','T','F','S'],
-                datasets: [{ data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF' }]
+                datasets: [{ data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 5 }]
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
@@ -293,21 +296,39 @@
 
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
-        navigator.clipboard.writeText(link).then(() => tg.showAlert("Copied!"));
+        navigator.clipboard.writeText(link).then(() => tg.showAlert("Link Copied!"));
     }
 
+    // --- Admin Logic ---
     function adminAddBalance() {
         const target = document.getElementById('adm-uid').value;
         const val = parseFloat(document.getElementById('adm-amt').value);
+        if(!target || isNaN(val)) return tg.showAlert("Invalid Input");
         db.ref('users/' + target + '/totalEarning').transaction(c => (c || 0) + val);
-        tg.showAlert("Added!");
+        tg.showAlert(`Added $${val} to ${target}`);
     }
 
     function loadAdminData() {
         db.ref('users').on('value', snap => {
             const div = document.getElementById('admin-user-list');
-            div.innerHTML = '<b>User List:</b><br>';
-            snap.forEach(u => div.innerHTML += `ID: ${u.key} | $${(u.val().totalEarning || 0).toFixed(2)}<br>`);
+            const stats = document.getElementById('admin-stats');
+            let totalUsers = 0;
+            let totalFund = 0;
+            div.innerHTML = '';
+            
+            snap.forEach(u => {
+                totalUsers++;
+                const data = u.val();
+                totalFund += (data.totalEarning || 0);
+                
+                div.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee;">
+                    <b>Name:</b> ${data.name || 'N/A'} <br>
+                    <b>UID:</b> ${u.key} <br>
+                    <b>Balance:</b> $${(data.totalEarning || 0).toFixed(3)} <br>
+                    <b>Referrals:</b> ${data.referrals || 0}
+                </div>`;
+            });
+            stats.innerHTML = `<b>Total Users:</b> ${totalUsers} | <b>Total Balance:</b> $${totalFund.toFixed(2)}`;
         });
     }
 
