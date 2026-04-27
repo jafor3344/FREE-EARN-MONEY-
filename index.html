@@ -14,37 +14,36 @@
         :root { --primary: #007AFF; --bg: #F2F4F7; --card: #FFFFFF; --text: #1C1C1E; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; color: var(--text); }
         
+        /* Profile Header */
         .profile-header { display: flex; align-items: center; gap: 15px; padding: 20px; background: var(--card); margin-bottom: 1px; border-radius: 0 0 20px 20px; }
         .user-pic { width: 50px; height: 50px; border-radius: 50%; background: #ddd; object-fit: cover; border: 2px solid var(--primary); display: block; }
         .user-info-text { display: flex; flex-direction: column; }
         .user-name { font-weight: 800; font-size: 18px; color: var(--text); }
         .user-status { font-size: 12px; color: #4CAF50; font-weight: bold; }
 
+        /* Balance Area */
         .header-balance { background: var(--primary); color: white; padding: 25px 20px; border-radius: 20px; text-align: center; margin: 15px; }
-        .balance-title { font-size: 13px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; }
         .balance-val { font-size: 38px; font-weight: 800; margin: 5px 0; }
         
         .container { padding: 0 15px; }
         .card { background: var(--card); padding: 18px; border-radius: 20px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .card-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         
-        /* Finova Style Wallet Grid */
-        .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .method-card { background: #fff; border: 1px solid #eee; border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .method-card.active { border: 2px solid var(--primary); background: #f0f7ff; }
-        .method-card img { width: 35px; height: 35px; margin-bottom: 8px; border-radius: 8px; object-fit: contain; }
+        /* Wallet Grid */
+        .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .method-card { background: #fff; border: 1.5px solid #eee; border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .method-card.active { border-color: var(--primary); background: #f0f7ff; }
+        .method-card img { width: 32px; height: 32px; margin-bottom: 8px; object-fit: contain; }
         .method-card span { display: block; font-size: 11px; font-weight: 600; color: #444; }
 
-        /* History & Refer List */
-        .history-item, .refer-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
+        /* List Items (Refer & History) */
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
+        .list-left { display: flex; align-items: center; gap: 12px; }
+        .list-left img { width: 30px; height: 30px; border-radius: 50%; }
         .status-badge { background: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
 
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
-
-        #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 1000; }
         .nav-item { color: #8E8E93; text-decoration: none; font-size: 11px; text-align: center; flex: 1; border: none; background: none; }
@@ -54,9 +53,9 @@
 </head>
 <body>
 
-<div id="ad-loader">
-    <div class="spinner"></div>
-    <div id="ad-timer">Loading Advertisement...</div>
+<div id="ad-loader" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; flex-direction:column; align-items:center; justify-content:center; color:white;">
+    <div style="width:40px; height:40px; border:4px solid #fff; border-top:4px solid var(--primary); border-radius:50%; animation:spin 1s linear infinite;"></div>
+    <p id="ad-timer" style="margin-top:15px;">Loading Ad...</p>
 </div>
 
 <div id="section-home">
@@ -68,27 +67,27 @@
         </div>
     </div>
     <div class="header-balance">
-        <div class="balance-title">Main Balance</div>
+        <div style="font-size: 13px; opacity: 0.9;">Main Balance</div>
         <div class="balance-val" id="bal">$0.000</div>
     </div>
     <div class="container">
         <div class="card">
-            <div class="card-title"><i class="fa-solid fa-chart-line"></i> Income Status</div>
+            <div class="card-title"><i class="fa-solid fa-chart-line"></i> Weekly Income</div>
             <div style="height: 180px; width: 100%;"><canvas id="incomeChart"></canvas></div>
         </div>
-        <button class="btn-main" onclick="showSection('task')"><i class="fa-solid fa-circle-play"></i> START EARNING</button>
-        <button id="admin-btn" class="btn-main" style="display:none; margin-top: 10px; background: #333;" onclick="showSection('admin')">ADMIN PANEL</button>
+        <button class="btn-main" onclick="showSection('task')">START EARNING</button>
+        <button id="admin-btn" class="btn-main" style="display:none; margin-top:10px; background:#333;" onclick="showSection('admin')">ADMIN PANEL</button>
     </div>
 </div>
 
 <div id="section-task" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-link"></i> Channel Tasks</div>
-        <button class="btn-main" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join Channel</button>
+        <div class="card-title">Channel Tasks</div>
+        <button class="btn-main" style="margin-bottom:10px;" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join Official Channel</button>
     </div>
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
+        <div class="card-title">Video Tasks</div>
         <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.003)</button>
     </div>
 </div>
@@ -96,46 +95,42 @@
 <div id="section-wallet" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cash Out</div>
-        <p style="font-size: 12px; color: #666;">Minimum withdrawal is $10.00 for all methods.</p>
-        
+        <div class="card-title"><i class="fa-solid fa-wallet"></i> Cash Out</div>
         <div class="method-grid">
             <div class="method-card" onclick="selectMethod('bKash', 'Enter bKash Number', this)">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Bkash_logo.svg/200px-Bkash_logo.svg.png" alt="bKash">
+                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Bkash_logo.svg/200px-Bkash_logo.svg.png" alt="bkash">
                 <span>bKash</span>
             </div>
             <div class="method-card" onclick="selectMethod('Nagad', 'Enter Nagad Number', this)">
-                <img src="https://upload.wikimedia.org/wikipedia/bn/thumb/c/c4/Nagad_Logo.svg/240px-Nagad_Logo.svg.png" alt="Nagad">
+                <img src="https://upload.wikimedia.org/wikipedia/bn/thumb/c/c4/Nagad_Logo.svg/240px-Nagad_Logo.svg.png" alt="nagad">
                 <span>Nagad</span>
             </div>
             <div class="method-card" onclick="selectMethod('Binance', 'Enter Binance UID', this)">
-                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="Binance">
+                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="binance">
                 <span>Binance</span>
             </div>
             <div class="method-card" onclick="selectMethod('USDT', 'Enter USDT Address', this)">
-                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="USDT">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="usdt">
                 <span>USDT</span>
             </div>
             <div class="method-card" onclick="selectMethod('Litecoin', 'Enter LTC Address', this)">
-                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png" alt="Litecoin">
+                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png" alt="ltc">
                 <span>Litecoin</span>
             </div>
             <div class="method-card" onclick="selectMethod('WebMoney', 'Enter WMZ Purse', this)">
-                <img src="https://www.webmoney.ru/img/icons/wm_logo_80.png" alt="WebMoney">
+                <img src="https://www.webmoney.ru/img/icons/wm_logo_80.png" alt="wmz">
                 <span>WebMoney</span>
             </div>
         </div>
-
-        <div id="withdraw-panel" style="display:none;">
-            <input type="text" class="withdraw-input" id="wallet-addr" placeholder="Wallet Information">
-            <input type="number" class="withdraw-input" id="amount" placeholder="Amount (Min $10.00)">
+        <div id="withdraw-controls" style="display:none; margin-top:15px;">
+            <input type="text" class="withdraw-input" id="wallet-addr" placeholder="Address">
+            <input type="number" class="withdraw-input" id="amount" placeholder="Amount (Min $10)">
             <button class="btn-main" onclick="handleWithdraw()">Withdraw Now</button>
         </div>
     </div>
-
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Withdrawal History</div>
-        <div id="history-list"><p style="text-align: center; color: #888; font-size: 12px;">No history available</p></div>
+        <div class="card-title">Withdrawal History</div>
+        <div id="history-list"></div>
     </div>
 </div>
 
@@ -143,22 +138,24 @@
     <br>
     <div class="card" style="text-align: center;">
         <div class="card-title">Referral Program</div>
-        <div id="ref-count-display" style="font-size: 40px; font-weight: bold; color: var(--primary);">0</div>
-        <p style="font-size: 12px; color: #888; margin-top: -10px;">Total Successful Invites</p>
-        <button class="btn-main" style="margin-top:10px;" onclick="copyRef()">Copy Link</button>
+        <p>Refer Bonus: **$0.30**</p>
+        <div id="ref-count-display" style="font-size: 38px; font-weight: bold; color: var(--primary);">0</div>
+        <button class="btn-main" onclick="copyRef()">Copy Link</button>
     </div>
-
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-users-viewfinder"></i> Your Referral List</div>
-        <div id="refer-list"><p style="text-align: center; color: #888; font-size: 12px;">No referrals found</p></div>
+        <div class="card-title">Your Referral List</div>
+        <div id="refer-list-data"></div>
     </div>
 </div>
 
 <div id="section-admin" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title">User Management</div>
-        <div id="admin-user-list">Loading...</div>
+        <div class="card-title">Admin Controls</div>
+        <input type="text" id="adm-uid" class="withdraw-input" placeholder="User ID">
+        <input type="number" id="adm-amt" class="withdraw-input" placeholder="Amount">
+        <button class="btn-main" onclick="adminAddBalance()">Add Balance</button>
+        <div id="admin-user-list" style="margin-top:20px; font-size:12px;"></div>
     </div>
 </div>
 
@@ -170,6 +167,7 @@
 </nav>
 
 <script>
+    // --- Firebase Configuration ---
     const firebaseConfig = {
         apiKey: "AIzaSyCVhbUfVVx04SpVSSioBp6vw8oOwm3voug",
         authDomain: "telegram-mini-app-64ec3.firebaseapp.com",
@@ -179,112 +177,119 @@
         messagingSenderId: "925430758099",
         appId: "1:925430758099:web:773f1e100da1f80a12b226"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const uid = user?.id || "Dev_User";
+    const startParam = tg.initDataUnsafe?.start_param;
     const adminId = 6717490662;
 
     let state = { totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], referList: [] };
-    let currentMethod = '';
     let incomeChart = null;
+    let selectedMethod = '';
 
-    function selectMethod(method, placeholder, el) {
-        currentMethod = method;
-        document.getElementById('withdraw-panel').style.display = 'block';
-        document.getElementById('wallet-addr').placeholder = placeholder;
-        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-    }
-
+    // --- Init Function ---
     function init() {
-        const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "Guest User";
+        const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "User";
         document.getElementById('u-name').innerText = name;
         document.getElementById('u-pic').src = user?.photo_url || `https://ui-avatars.com/api/?name=${name}&background=007AFF&color=fff`;
 
-        if(uid == adminId) document.getElementById('admin-btn').style.display = 'block';
+        if(uid == adminId) {
+            document.getElementById('admin-btn').style.display = 'block';
+            loadAdminData();
+        }
 
         db.ref('users/' + uid).on('value', (snap) => {
             if (!snap.exists()) {
-                db.ref('users/' + uid).set({ totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], name: name });
-            }
-            const data = snap.val();
-            if(data) {
-                state = data;
-                document.getElementById('bal').innerText = `$${(data.totalEarning || 0).toFixed(3)}`;
-                document.getElementById('ref-count-display').innerText = data.referrals || 0;
+                let initial = { totalEarning: 0, referrals: 0, weekly: [0,0,0,0,0,0,0], name: name, referList: [] };
+                if (startParam && startParam != uid) {
+                    db.ref('users/' + startParam).transaction(u => {
+                        if (u) {
+                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.30;
+                            u.referrals = (parseInt(u.referrals) || 0) + 1;
+                            if(!u.referList) u.referList = [];
+                            u.referList.push({ name: name, id: uid });
+                        }
+                        return u;
+                    });
+                }
+                db.ref('users/' + uid).set(initial);
+            } else {
+                state = snap.val();
+                document.getElementById('bal').innerText = `$${(state.totalEarning || 0).toFixed(3)}`;
+                document.getElementById('ref-count-display').innerText = state.referrals || 0;
+                renderReferList(state.referList);
                 renderChart();
-                updateReferList(data.referList);
+                loadHistory();
             }
         });
-        loadHistory();
-        if(uid == adminId) loadAdminData();
     }
 
-    function updateReferList(list) {
-        const container = document.getElementById('refer-list');
-        if(!list) return;
-        container.innerHTML = '';
-        Object.keys(list).forEach(key => {
-            container.innerHTML += `<div class="refer-item"><span>ID: ${key}</span><span class="status-badge">Joined</span></div>`;
-        });
+    // --- Core Functions ---
+    function watchAd() {
+        document.getElementById('ad-loader').style.display = 'flex';
+        let time = 10;
+        const intr = setInterval(() => {
+            time--;
+            document.getElementById('ad-timer').innerText = `Watching: ${time}s`;
+            if(time <= 0) {
+                clearInterval(intr);
+                document.getElementById('ad-loader').style.display = 'none';
+                db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
+                tg.showAlert("Earned $0.003");
+            }
+        }, 1000);
+    }
+
+    function selectMethod(m, p, el) {
+        selectedMethod = m;
+        document.getElementById('withdraw-controls').style.display = 'block';
+        document.getElementById('wallet-addr').placeholder = p;
+        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
     }
 
     function handleWithdraw() {
         const amt = parseFloat(document.getElementById('amount').value);
         const addr = document.getElementById('wallet-addr').value;
-        if(amt < 10) return tg.showAlert("Minimum $10.00");
+        if(amt < 10) return tg.showAlert("Min $10!");
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
         
-        db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) - amt);
-        db.ref('users/' + uid + '/history').push({ method: currentMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString() });
-        tg.showAlert("Withdrawal Successful!");
+        db.ref('users/' + uid + '/totalEarning').transaction(c => c - amt);
+        db.ref('users/' + uid + '/history').push({
+            method: selectedMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString()
+        });
+        tg.showAlert("Withdrawal successful!");
+    }
+
+    function renderReferList(list) {
+        const div = document.getElementById('refer-list-data');
+        if(!list) { div.innerHTML = "<p style='text-align:center;'>No referrals.</p>"; return; }
+        div.innerHTML = '';
+        list.forEach(r => {
+            div.innerHTML += `<div class="list-item">
+                <div class="list-left">
+                    <img src="https://ui-avatars.com/api/?name=${r.name}&background=random">
+                    <div><b>${r.name}</b><br><small>ID: ${r.id}</small></div>
+                </div>
+                <span class="status-badge">Joined</span>
+            </div>`;
+        });
     }
 
     function loadHistory() {
         db.ref('users/' + uid + '/history').on('value', (snap) => {
-            const list = document.getElementById('history-list');
-            if(!snap.exists()) return;
-            list.innerHTML = '';
-            snap.forEach(child => {
-                const h = child.val();
-                list.innerHTML += `<div class="history-item">
+            const div = document.getElementById('history-list');
+            div.innerHTML = '';
+            snap.forEach(c => {
+                const h = c.val();
+                div.innerHTML += `<div class="list-item">
                     <div><b>${h.method}</b><br><small>${h.time}</small></div>
-                    <div style="text-align:right;"><b style="color:var(--primary);">$${h.amount.toFixed(2)}</b><br><span class="status-badge">Success</span></div>
+                    <div style="text-align:right;"><b color="var(--primary)">$${h.amount}</b><br><span class="status-badge">Success</span></div>
                 </div>`;
             });
         });
-    }
-
-    function loadAdminData() {
-        db.ref('users').on('value', (snap) => {
-            const container = document.getElementById('admin-user-list');
-            container.innerHTML = '';
-            snap.forEach(child => {
-                const u = child.val();
-                container.innerHTML += `<div class="history-item"><span>${u.name}</span><b>$${(u.totalEarning || 0).toFixed(2)}</b></div>`;
-            });
-        });
-    }
-
-    function watchAd() {
-        document.getElementById('ad-loader').style.display = 'flex';
-        setTimeout(() => {
-            document.getElementById('ad-loader').style.display = 'none';
-            db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
-            tg.showAlert("Earned $0.003");
-        }, 5000);
-    }
-
-    function showSection(id, el) {
-        ['home', 'task', 'refer', 'wallet', 'admin'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
-        document.getElementById('section-' + id).style.display = 'block';
-        if(el) {
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
-        }
     }
 
     function renderChart() {
@@ -292,19 +297,54 @@
         if(incomeChart) incomeChart.destroy();
         incomeChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], datasets: [{ label: 'Income', data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 8 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            data: {
+                labels: ['S','M','T','W','T','F','S'],
+                datasets: [{ data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 5 }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
         });
+    }
+
+    function showSection(id, el) {
+        ['home','task','refer','wallet','admin'].forEach(s => {
+            const section = document.getElementById('section-' + s);
+            if(section) section.style.display = 'none';
+        });
+        document.getElementById('section-' + id).style.display = 'block';
+        if(el) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+        }
     }
 
     function copyRef() {
         const link = `https://t.me/trustedincome26bot?start=${uid}`;
-        navigator.clipboard.writeText(link).then(() => tg.showAlert("Link Copied!"));
+        navigator.clipboard.writeText(link).then(() => tg.showAlert("Copied!"));
+    }
+
+    // --- Admin Logic ---
+    function adminAddBalance() {
+        const target = document.getElementById('adm-uid').value;
+        const val = parseFloat(document.getElementById('adm-amt').value);
+        db.ref('users/' + target + '/totalEarning').transaction(c => (c || 0) + val);
+        tg.showAlert("Added!");
+    }
+
+    function loadAdminData() {
+        db.ref('users').on('value', snap => {
+            const div = document.getElementById('admin-user-list');
+            div.innerHTML = '<b>User List:</b><br>';
+            snap.forEach(u => {
+                const data = u.val();
+                div.innerHTML += `ID: ${u.key} | ${data.name} | $${(data.totalEarning || 0).toFixed(2)}<br>`;
+            });
+        });
     }
 
     tg.ready();
     tg.expand();
     window.onload = init;
 </script>
+<style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 </body>
 </html>
