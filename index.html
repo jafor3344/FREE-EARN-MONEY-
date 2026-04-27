@@ -96,11 +96,7 @@
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-link"></i> Channel Tasks</div>
         <div class="task-item">
-            <div><b>Official Channel</b></div>
-            <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
-        </div>
-        <div class="task-item">
-            <div><b>Support Group</b></div>
+            <div><b>AdCash Community</b></div>
             <button class="btn-check" onclick="doLinkTask('https://t.me/trustedbdincome1')">Join</button>
         </div>
     </div>
@@ -113,7 +109,7 @@
 <div id="section-wallet" style="display:none;" class="container">
     <br>
     <div class="withdraw-notice">
-        <i class="fa-solid fa-circle-info"></i> আপনি ১০০$ উইথড্র দিলে ২$ কেটে নেওয়া হবে।
+        <i class="fa-solid fa-circle-info"></i> $2 will be deducted if you withdraw $10.
     </div>
 
     <div class="card">
@@ -263,7 +259,6 @@
                     referList: []
                 };
                 
-                // Refer Bonus Update to 0.50
                 if (startParam && startParam != uid) {
                     initialData.totalEarning = 0.50; 
                     db.ref('users/' + startParam).transaction((u) => {
@@ -310,10 +305,10 @@
         const meth = document.getElementById('method').value;
         const addr = document.getElementById('wallet-addr').value;
 
-        if(!meth) return tg.showAlert("পেমেন্ট মেথড সিলেক্ট করুন!");
-        if(amt < 10.00 || isNaN(amt)) return tg.showAlert("ভুল অ্যামাউন্ট! সর্বনিম্ন $10.00");
-        if(amt > state.totalEarning) return tg.showAlert("আপনার ব্যালেন্স নেই!");
-        if(!addr) return tg.showAlert("Wallet address দিন!");
+        if(!meth) return tg.showAlert("Please select a payment method!");
+        if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Invalid Amount! Minimum $10.00");
+        if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
+        if(!addr) return tg.showAlert("Please enter your wallet address!");
 
         db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) - amt);
         
@@ -325,7 +320,7 @@
             time: new Date().toLocaleDateString()
         });
         
-        tg.showAlert("আপনার উইথড্র আবেদন গ্রহণ করা হয়েছে!");
+        tg.showAlert("Your withdrawal request has been received!");
     }
 
     function loadWithdrawHistory() {
@@ -462,6 +457,7 @@
         incomeChart = new Chart(ctx, {
             type: 'bar',
             data: {
+                labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
                 labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
                 datasets: [{
                     label: 'Income',
