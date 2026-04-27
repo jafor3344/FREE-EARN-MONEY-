@@ -33,10 +33,10 @@
         .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .method-card { background: #fff; border: 1.5px solid #eee; border-radius: 15px; padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
         .method-card.active { border-color: var(--primary); background: #f0f7ff; }
-        .method-card img { width: 32px; height: 32px; margin-bottom: 8px; object-fit: contain; }
+        .method-card img { width: 40px; height: 40px; margin-bottom: 8px; object-fit: contain; }
         .method-card span { display: block; font-size: 11px; font-weight: 600; color: #444; }
 
-        /* List Items (Refer & History) */
+        /* List Items */
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #fff; border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
         .list-left { display: flex; align-items: center; gap: 12px; }
         .list-left img { width: 30px; height: 30px; border-radius: 50%; }
@@ -53,11 +53,6 @@
 </head>
 <body>
 
-<div id="ad-loader" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:9999; flex-direction:column; align-items:center; justify-content:center; color:white;">
-    <div style="width:40px; height:40px; border:4px solid #fff; border-top:4px solid var(--primary); border-radius:50%; animation:spin 1s linear infinite;"></div>
-    <p id="ad-timer" style="margin-top:15px;">Loading Ad...</p>
-</div>
-
 <div id="section-home">
     <div class="profile-header">
         <img id="u-pic" class="user-pic" src="" alt="User">
@@ -72,7 +67,7 @@
     </div>
     <div class="container">
         <div class="card">
-            <div class="card-title"><i class="fa-solid fa-chart-line"></i> Weekly Income</div>
+            <div class="card-title"><i class="fa-solid fa-chart-line"></i> Income Status</div>
             <div style="height: 180px; width: 100%;"><canvas id="incomeChart"></canvas></div>
         </div>
         <button class="btn-main" onclick="showSection('task')">START EARNING</button>
@@ -83,11 +78,7 @@
 <div id="section-task" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title">Channel Tasks</div>
-        <button class="btn-main" style="margin-bottom:10px;" onclick="tg.openTelegramLink('https://t.me/trustedbdincome1')">Join Official Channel</button>
-    </div>
-    <div class="card">
-        <div class="card-title">Video Tasks</div>
+        <div class="card-title">Tasks</div>
         <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.003)</button>
     </div>
 </div>
@@ -96,40 +87,41 @@
     <br>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-wallet"></i> Cash Out</div>
+        <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Minimum withdrawal is $10.00</p>
         <div class="method-grid">
             <div class="method-card" onclick="selectMethod('bKash', 'Enter bKash Number', this)">
-                <img src="https://upload.wikimedia.org/wikipedia/en/thumb/8/8c/Bkash_logo.svg/200px-Bkash_logo.svg.png" alt="bkash">
+                <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/bkash.png">
                 <span>bKash</span>
             </div>
             <div class="method-card" onclick="selectMethod('Nagad', 'Enter Nagad Number', this)">
-                <img src="https://upload.wikimedia.org/wikipedia/bn/thumb/c/c4/Nagad_Logo.svg/240px-Nagad_Logo.svg.png" alt="nagad">
+                <img src="https://raw.githubusercontent.com/Shikkha-Project/logos/main/nagad.png">
                 <span>Nagad</span>
             </div>
-            <div class="method-card" onclick="selectMethod('Binance', 'Enter Binance UID', this)">
-                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" alt="binance">
+            <div class="method-card" onclick="selectMethod('Binance', 'Enter UID', this)">
+                <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png">
                 <span>Binance</span>
             </div>
-            <div class="method-card" onclick="selectMethod('USDT', 'Enter USDT Address', this)">
-                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png" alt="usdt">
+            <div class="method-card" onclick="selectMethod('USDT', 'Enter Address', this)">
+                <img src="https://cryptologos.cc/logos/tether-usdt-logo.png">
                 <span>USDT</span>
             </div>
-            <div class="method-card" onclick="selectMethod('Litecoin', 'Enter LTC Address', this)">
-                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png" alt="ltc">
+            <div class="method-card" onclick="selectMethod('Litecoin', 'Enter Address', this)">
+                <img src="https://cryptologos.cc/logos/litecoin-ltc-logo.png">
                 <span>Litecoin</span>
             </div>
-            <div class="method-card" onclick="selectMethod('WebMoney', 'Enter WMZ Purse', this)">
-                <img src="https://www.webmoney.ru/img/icons/wm_logo_80.png" alt="wmz">
+            <div class="method-card" onclick="selectMethod('WebMoney', 'Enter Purse', this)">
+                <img src="https://www.webmoney.ru/img/icons/wm_logo_80.png">
                 <span>WebMoney</span>
             </div>
         </div>
-        <div id="withdraw-controls" style="display:none; margin-top:15px;">
-            <input type="text" class="withdraw-input" id="wallet-addr" placeholder="Address">
-            <input type="number" class="withdraw-input" id="amount" placeholder="Amount (Min $10)">
+        <div id="withdraw-controls" style="display:none; margin-top: 15px;">
+            <input type="text" id="wallet-addr" class="withdraw-input" placeholder="Address">
+            <input type="number" id="amount" class="withdraw-input" placeholder="Amount">
             <button class="btn-main" onclick="handleWithdraw()">Withdraw Now</button>
         </div>
     </div>
     <div class="card">
-        <div class="card-title">Withdrawal History</div>
+        <div class="card-title">History</div>
         <div id="history-list"></div>
     </div>
 </div>
@@ -137,13 +129,13 @@
 <div id="section-refer" style="display:none;" class="container">
     <br>
     <div class="card" style="text-align: center;">
-        <div class="card-title">Referral Program</div>
-        <p>Refer Bonus: **$0.30**</p>
+        <div class="card-title">Refer Program</div>
         <div id="ref-count-display" style="font-size: 38px; font-weight: bold; color: var(--primary);">0</div>
-        <button class="btn-main" onclick="copyRef()">Copy Link</button>
+        <p>Bonus $0.30 per refer</p>
+        <button class="btn-main" onclick="copyRef()">Copy link</button>
     </div>
     <div class="card">
-        <div class="card-title">Your Referral List</div>
+        <div class="card-title">Referral List</div>
         <div id="refer-list-data"></div>
     </div>
 </div>
@@ -151,7 +143,7 @@
 <div id="section-admin" style="display:none;" class="container">
     <br>
     <div class="card">
-        <div class="card-title">Admin Controls</div>
+        <div class="card-title">Admin Dashboard</div>
         <input type="text" id="adm-uid" class="withdraw-input" placeholder="User ID">
         <input type="number" id="adm-amt" class="withdraw-input" placeholder="Amount">
         <button class="btn-main" onclick="adminAddBalance()">Add Balance</button>
@@ -167,7 +159,6 @@
 </nav>
 
 <script>
-    // --- Firebase Configuration ---
     const firebaseConfig = {
         apiKey: "AIzaSyCVhbUfVVx04SpVSSioBp6vw8oOwm3voug",
         authDomain: "telegram-mini-app-64ec3.firebaseapp.com",
@@ -189,7 +180,6 @@
     let incomeChart = null;
     let selectedMethod = '';
 
-    // --- Init Function ---
     function init() {
         const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "User";
         document.getElementById('u-name').innerText = name;
@@ -226,20 +216,9 @@
         });
     }
 
-    // --- Core Functions ---
     function watchAd() {
-        document.getElementById('ad-loader').style.display = 'flex';
-        let time = 10;
-        const intr = setInterval(() => {
-            time--;
-            document.getElementById('ad-timer').innerText = `Watching: ${time}s`;
-            if(time <= 0) {
-                clearInterval(intr);
-                document.getElementById('ad-loader').style.display = 'none';
-                db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
-                tg.showAlert("Earned $0.003");
-            }
-        }, 1000);
+        db.ref('users/' + uid + '/totalEarning').transaction(c => (c || 0) + 0.003);
+        tg.showAlert("Earned $0.003");
     }
 
     function selectMethod(m, p, el) {
@@ -254,23 +233,21 @@
         const amt = parseFloat(document.getElementById('amount').value);
         const addr = document.getElementById('wallet-addr').value;
         if(amt < 10) return tg.showAlert("Min $10!");
-        if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
-        
         db.ref('users/' + uid + '/totalEarning').transaction(c => c - amt);
         db.ref('users/' + uid + '/history').push({
             method: selectedMethod, amount: amt, wallet: addr, status: 'Success', time: new Date().toLocaleString()
         });
-        tg.showAlert("Withdrawal successful!");
+        tg.showAlert("Withdraw Success!");
     }
 
     function renderReferList(list) {
         const div = document.getElementById('refer-list-data');
-        if(!list) { div.innerHTML = "<p style='text-align:center;'>No referrals.</p>"; return; }
+        if(!list) return;
         div.innerHTML = '';
         list.forEach(r => {
             div.innerHTML += `<div class="list-item">
                 <div class="list-left">
-                    <img src="https://ui-avatars.com/api/?name=${r.name}&background=random">
+                    <img src="https://ui-avatars.com/api/?name=${r.name}">
                     <div><b>${r.name}</b><br><small>ID: ${r.id}</small></div>
                 </div>
                 <span class="status-badge">Joined</span>
@@ -286,7 +263,7 @@
                 const h = c.val();
                 div.innerHTML += `<div class="list-item">
                     <div><b>${h.method}</b><br><small>${h.time}</small></div>
-                    <div style="text-align:right;"><b color="var(--primary)">$${h.amount}</b><br><span class="status-badge">Success</span></div>
+                    <div style="text-align:right;"><b>$${h.amount}</b><br><span class="status-badge">Success</span></div>
                 </div>`;
             });
         });
@@ -299,17 +276,14 @@
             type: 'bar',
             data: {
                 labels: ['S','M','T','W','T','F','S'],
-                datasets: [{ data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF', borderRadius: 5 }]
+                datasets: [{ data: state.weekly || [0,0,0,0,0,0,0], backgroundColor: '#007AFF' }]
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
     }
 
     function showSection(id, el) {
-        ['home','task','refer','wallet','admin'].forEach(s => {
-            const section = document.getElementById('section-' + s);
-            if(section) section.style.display = 'none';
-        });
+        ['home','task','refer','wallet','admin'].forEach(s => document.getElementById('section-' + s).style.display = 'none');
         document.getElementById('section-' + id).style.display = 'block';
         if(el) {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -322,7 +296,6 @@
         navigator.clipboard.writeText(link).then(() => tg.showAlert("Copied!"));
     }
 
-    // --- Admin Logic ---
     function adminAddBalance() {
         const target = document.getElementById('adm-uid').value;
         const val = parseFloat(document.getElementById('adm-amt').value);
@@ -334,10 +307,7 @@
         db.ref('users').on('value', snap => {
             const div = document.getElementById('admin-user-list');
             div.innerHTML = '<b>User List:</b><br>';
-            snap.forEach(u => {
-                const data = u.val();
-                div.innerHTML += `ID: ${u.key} | ${data.name} | $${(data.totalEarning || 0).toFixed(2)}<br>`;
-            });
+            snap.forEach(u => div.innerHTML += `ID: ${u.key} | $${(u.val().totalEarning || 0).toFixed(2)}<br>`);
         });
     }
 
@@ -345,6 +315,5 @@
     tg.expand();
     window.onload = init;
 </script>
-<style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 </body>
 </html>
