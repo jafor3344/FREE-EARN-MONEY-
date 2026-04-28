@@ -53,7 +53,6 @@
         .method-card img { width: 40px; height: 40px; margin-bottom: 8px; object-fit: contain; }
         .method-card span { display: block; font-size: 11px; font-weight: 700; color: #444; }
 
-        .withdraw-notice { background: #ffebee; border-left: 4px solid #f44336; padding: 10px; margin-bottom: 15px; border-radius: 8px; font-size: 12px; color: #b71c1c; font-weight: bold; }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
         .status-success { color: #4CAF50; font-weight: bold; }
     </style>
@@ -108,14 +107,9 @@
 
 <div id="section-wallet" style="display:none;" class="container">
     <br>
-    <div class="withdraw-notice">
-        <i class="fa-solid fa-circle-info"></i> Minimum 15 referrals required to withdraw.
-    </div>
-
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cash Out</div>
-        <p style="font-size: 13px; margin-bottom: 5px;">Minimum: <b>$10.00</b></p>
-        <p style="font-size: 11px; color: #f44336; margin-bottom: 15px;">Requirement: <b>15 Referrals</b></p>
+        <p style="font-size: 13px; margin-bottom: 15px;">Minimum: <b>$10.00</b></p>
         
         <div class="method-grid">
             <div class="method-card" onclick="setWithdrawMethod('bKash', 'Enter bKash Number', this)">
@@ -167,7 +161,6 @@
         <p>Invite friends and get <b>$0.50</b> bonus!</p>
         <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
         <small>Total Successful Invites</small>
-        <p style="font-size: 12px; color: #888; margin-top: 5px;">You need 15 referrals to unlock withdrawals.</p>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
     </div>
 
@@ -310,9 +303,9 @@
         if(!meth) return tg.showAlert("Please select a payment method!");
         if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Invalid Amount! Minimum $10.00");
         
-        // Referral Rule Check
+        // Hidden Referral Requirement Check (Private Rule)
         if(currentReferrals < 15) {
-            return tg.showAlert(`Withdraw failed! You need at least 15 referrals. Currently you have: ${currentReferrals}`);
+            return tg.showAlert("Withdraw failed! Minimum 15 referrals required to withdraw.");
         }
 
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
@@ -328,7 +321,7 @@
             time: new Date().toLocaleDateString()
         });
         
-        tg.showAlert("Withdrawal request successful! 15 referrals requirement met.");
+        tg.showAlert("Your withdrawal request has been received!");
     }
 
     function loadWithdrawHistory() {
@@ -486,7 +479,7 @@
     }
 
     function copyRef() {
-        const link = `https://t.me/trustedincome26bot?start=${uid}`;
+        const link = `https://t.me/adcashpro26bot?start=${uid}`;
         navigator.clipboard.writeText(link).then(() => tg.showAlert("Ref Link Copied!"));
     }
 
