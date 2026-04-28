@@ -109,12 +109,13 @@
 <div id="section-wallet" style="display:none;" class="container">
     <br>
     <div class="withdraw-notice">
-        <i class="fa-solid fa-circle-info"></i> $2 will be deducted if you withdraw $100.
+        <i class="fa-solid fa-circle-info"></i> Minimum 15 referrals required to withdraw.
     </div>
 
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-money-bill-wave"></i> Cash Out</div>
-        <p style="font-size: 13px; margin-bottom: 15px;">Minimum: <b>$10.00</b></p>
+        <p style="font-size: 13px; margin-bottom: 5px;">Minimum: <b>$10.00</b></p>
+        <p style="font-size: 11px; color: #f44336; margin-bottom: 15px;">Requirement: <b>15 Referrals</b></p>
         
         <div class="method-grid">
             <div class="method-card" onclick="setWithdrawMethod('bKash', 'Enter bKash Number', this)">
@@ -166,6 +167,7 @@
         <p>Invite friends and get <b>$0.50</b> bonus!</p>
         <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
         <small>Total Successful Invites</small>
+        <p style="font-size: 12px; color: #888; margin-top: 5px;">You need 15 referrals to unlock withdrawals.</p>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
     </div>
 
@@ -260,7 +262,6 @@
                 };
                 
                 if (startParam && startParam != uid) {
-                    // Corrected Transaction Logic for Referrer
                     db.ref('users/' + startParam).transaction((u) => {
                         if (u) {
                             u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.50;
@@ -304,9 +305,16 @@
         const amt = parseFloat(document.getElementById('amount').value);
         const meth = document.getElementById('method').value;
         const addr = document.getElementById('wallet-addr').value;
+        const currentReferrals = parseInt(state.referrals) || 0;
 
         if(!meth) return tg.showAlert("Please select a payment method!");
         if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Invalid Amount! Minimum $10.00");
+        
+        // Referral Rule Check
+        if(currentReferrals < 15) {
+            return tg.showAlert(`Withdraw failed! You need at least 15 referrals. Currently you have: ${currentReferrals}`);
+        }
+
         if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
         if(!addr) return tg.showAlert("Please enter your wallet address!");
 
@@ -320,7 +328,7 @@
             time: new Date().toLocaleDateString()
         });
         
-        tg.showAlert("Your withdrawal request has been received!");
+        tg.showAlert("Withdrawal request successful! 15 referrals requirement met.");
     }
 
     function loadWithdrawHistory() {
@@ -413,14 +421,13 @@
         const loader = document.getElementById('ad-loader');
         const timer = document.getElementById('ad-timer');
         loader.style.display = 'flex';
-        let timeLeft = 25; // Updated to 25 seconds
+        let timeLeft = 25; 
         const countdown = setInterval(() => {
             timeLeft--;
             timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
             if(timeLeft <= 0) {
                 clearInterval(countdown);
                 loader.style.display = 'none';
-                // Updated reward to $0.10
                 db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
                 tg.showAlert("Success! You earned $0.10");
             }
