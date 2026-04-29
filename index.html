@@ -126,7 +126,7 @@
 <div id="section-wallet" style="display:none;" class="container">
     <br>
     <div class="withdraw-notice">
-        <i class="fa-solid fa-circle-info"></i> $2 will be deducted if you withdraw $10.
+        <i class="fa-solid fa-circle-info"></i>
     </div>
 
     <div class="card">
@@ -323,15 +323,24 @@
         const meth = document.getElementById('method').value;
         const addr = document.getElementById('wallet-addr').value;
         const currentReferrals = parseInt(state.referrals) || 0;
+        const currentBalance = parseFloat(state.totalEarning) || 0;
 
         if(!meth) return tg.showAlert("Please select a payment method!");
+        
+        // ১. ১০ ডলারের নিচে টাইপ করলে বা উইথড্র দিলে আটকাবে
         if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Invalid Amount! Minimum $10.00");
         
-        if(currentReferrals < 15) {
-            return tg.showAlert("Withdraw failed! Minimum 15 referrals required to withdraw.");
+        // ২. ব্যালেন্স ১০ ডলার থাকলে উইথড্র বাটনে ক্লিক করলে রেফার চেক করবে
+        if(currentBalance < 10.00) {
+            return tg.showAlert("Insufficient balance! Minimum $10.00 required.");
         }
 
-        if(amt > state.totalEarning) return tg.showAlert("Insufficient balance!");
+        // ৩. ব্যালেন্স ১০ ডলার আছে কিন্তু রেফার ১০টি নেই, তখন এই মেসেজ দিবে
+        if(currentReferrals < 10) {
+            return tg.showAlert("Withdraw failed! Minimum 10 referrals required to withdraw.");
+        }
+
+        if(amt > currentBalance) return tg.showAlert("Insufficient balance!");
         if(!addr) return tg.showAlert("Please enter your wallet address!");
 
         db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) - amt);
@@ -522,7 +531,7 @@
     }
 
     function copyRef() {
-        const link = `https://t.me/adcashpro257bot/app?startapp=${uid}`;
+        const link = `https://t.me/adcashpro26bot?start=${uid}`;
         navigator.clipboard.writeText(link).then(() => tg.showAlert("Ref Link Copied!"));
     }
 
