@@ -33,6 +33,7 @@
         
         .withdraw-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         .btn-main { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 16px; font-weight: 700; cursor: pointer; }
+        .btn-main:disabled { background: #cccccc; cursor: not-allowed; }
 
         #ad-loader { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px; }
@@ -53,26 +54,21 @@
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
         .status-success { color: #4CAF50; font-weight: bold; }
 
-        /* Admin Styles for List View */
-        .admin-list-item { 
-            background: #f8f9fa; 
-            padding: 12px; 
-            border-radius: 12px; 
-            margin-bottom: 10px; 
-            border: 1px solid #eee; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 4px; 
-        }
-        .admin-list-row { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-size: 13px; 
-        }
+        .admin-list-item { background: #f8f9fa; padding: 12px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 4px; }
+        .admin-list-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .user-id-badge { background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
         .user-bal-badge { color: var(--primary); font-weight: 800; font-size: 14px; }
         .w-amt { color: #f44336; font-weight: 800; }
+        
+        /* VIP Task Styles */
+        .vip-task-item { background: #fff5e6; border: 1px solid #ffe0b2; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+        .vip-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .vip-title { font-weight: bold; font-size: 14px; color: #e65100; }
+        .vip-reward { font-weight: 800; color: #fb8c00; font-size: 14px; }
+        .vip-actions { display: flex; gap: 8px; }
+        .btn-vip-action { flex: 1; padding: 8px; border-radius: 6px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-install { background: #fb8c00; color: white; }
+        .btn-verify { background: #4CAF50; color: white; }
     </style>
 </head>
 <body>
@@ -117,16 +113,47 @@
             <button class="btn-check" onclick="doLinkTask('https://t.me/adcashpro2027')">Join</button>
         </div>
     </div>
+    
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
-        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.10)</button>
+        <div style="font-size: 12px; color: #666; margin-bottom: 10px;" id="ad-count-status">Ads Remaining: 30/30</div>
+        <button class="btn-main" id="watch-ad-btn" onclick="watchAd()">Watch Video Ad ($0.05)</button>
+    </div>
+
+    <!-- VIP Task Section -->
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-crown" style="color: #fb8c00;"></i> VIP Tasks</div>
+        <div id="vip-tasks-container">
+            <!-- VIP Task 1 -->
+            <div class="vip-task-item" id="vip-1">
+                <div class="vip-info">
+                    <span class="vip-title">Task 1: Install Sponsor App</span>
+                    <span class="vip-reward">+$0.10</span>
+                </div>
+                <div class="vip-actions">
+                    <button class="btn-vip-action btn-install" onclick="startVipTask(1, 'https://play.google.com')"><i class="fa-solid fa-download"></i> Install App</button>
+                    <button class="btn-vip-action btn-verify" onclick="verifyVipTask(1)"><i class="fa-solid fa-shield-check"></i> Verify Installation</button>
+                </div>
+            </div>
+            <!-- VIP Task 2 -->
+            <div class="vip-task-item" id="vip-2" style="margin-top: 10px;">
+                <div class="vip-info">
+                    <span class="vip-title">Task 2: Crypto Wallet Download</span>
+                    <span class="vip-reward">+$0.10</span>
+                </div>
+                <div class="vip-actions">
+                    <button class="btn-vip-action btn-install" onclick="startVipTask(2, 'https://play.google.com')"><i class="fa-solid fa-download"></i> Install App</button>
+                    <button class="btn-vip-action btn-verify" onclick="verifyVipTask(2)"><i class="fa-solid fa-shield-check"></i> Verify Installation</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <div id="section-wallet" style="display:none;" class="container">
     <br>
     <div class="withdraw-notice">
-        <i class="fa-solid fa-circle-info"></i>
+        <i class="fa-solid fa-circle-info"></i> Minimum 10 referrals required to withdraw.
     </div>
 
     <div class="card">
@@ -180,7 +207,7 @@
     <br>
     <div class="card" style="text-align: center;">
         <div class="card-title">Referral Program</div>
-        <p>Invite friends and get <b>$0.50</b> bonus!</p>
+        <p>Invite friends and get <b>$0.20</b> bonus!</p>
         <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
         <small>Total Successful Invites</small>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
@@ -250,7 +277,7 @@
     const startParam = tg.initDataUnsafe?.start_param; 
     const adminId = 6717490662; 
 
-    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], referList: [] };
+    let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], referList: [], lastAdReset: 0, adsWatchedThisHour: 0, clickedVipTasks: {} };
     let incomeChart = null;
 
     function init() {
@@ -275,13 +302,17 @@
                     referrals: 0,
                     weekly: [0, 0, 0, 0, 0, 0, 0],
                     name: name,
-                    referList: []
+                    referList: [],
+                    lastAdReset: Date.now(),
+                    adsWatchedThisHour: 0,
+                    clickedVipTasks: {}
                 };
                 
+                // রেফারাল বোনাস পরিবর্তন করে $০.২০ করা হয়েছে
                 if (startParam && startParam != uid) {
                     db.ref('users/' + startParam).transaction((u) => {
                         if (u) {
-                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.50;
+                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.20;
                             u.referrals = (parseInt(u.referrals) || 0) + 1;
                             if(!u.referList) u.referList = [];
                             u.referList.push({ name: name, id: uid });
@@ -302,12 +333,94 @@
                     const refDisplay = document.getElementById('ref-count-display');
                     if(refDisplay) refDisplay.innerText = state.referrals || 0;
                     updateReferList(state.referList);
+                    checkAdCooldown();
                     renderChart();
                 }
             });
         });
 
         loadWithdrawHistory();
+    }
+
+    function checkAdCooldown() {
+        const now = Date.now();
+        const oneHour = 60 * 60 * 1000;
+        const lastReset = state.lastAdReset || now;
+        
+        if (now - lastReset >= oneHour) {
+            state.adsWatchedThisHour = 0;
+            state.lastAdReset = now;
+            db.ref('users/' + uid).update({
+                adsWatchedThisHour: 0,
+                lastAdReset: now
+            });
+        }
+        
+        const remaining = 30 - (state.adsWatchedThisHour || 0);
+        const statusText = document.getElementById('ad-count-status');
+        const watchBtn = document.getElementById('watch-ad-btn');
+        
+        if (remaining <= 0) {
+            const nextAvailable = Math.ceil((oneHour - (now - lastReset)) / 1000 / 60);
+            statusText.innerText = `Ads Limit Reached! Try again in ${nextAvailable} mins.`;
+            watchBtn.disabled = true;
+        } else {
+            statusText.innerText = `Ads Remaining This Hour: ${remaining}/30`;
+            watchBtn.disabled = false;
+        }
+    }
+
+    function watchAd() {
+        const adLink = "https://omg10.com/4/10924120"; 
+        tg.openLink(adLink); 
+
+        const loader = document.getElementById('ad-loader');
+        const timer = document.getElementById('ad-timer');
+        loader.style.display = 'flex';
+        
+        let timeLeft = 15; // টাইমার কমিয়ে ১৫ সেকেন্ড করা হয়েছে
+        timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
+        
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
+            if(timeLeft <= 0) {
+                clearInterval(countdown);
+                loader.style.display = 'none';
+                
+                const currentCount = (state.adsWatchedThisHour || 0) + 1;
+                
+                db.ref('users/' + uid).update({
+                    adsWatchedThisHour: currentCount
+                });
+                
+                // প্রতি অ্যাড রিওয়ার্ড ০.০৫ ডলার সেট করা হয়েছে
+                db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.05);
+                tg.showAlert("Success! You earned $0.05");
+            }
+        }, 1000);
+    }
+
+    // VIP Task লজিক (ইন্সটল নিশ্চিত না করে ব্যালেন্স যোগ হবে না)
+    function startVipTask(taskId, appLink) {
+        if(!state.clickedVipTasks) state.clickedVipTasks = {};
+        state.clickedVipTasks[taskId] = true;
+        
+        db.ref('users/' + uid + '/clickedVipTasks/' + taskId).set(true);
+        tg.openLink(appLink);
+    }
+
+    function verifyVipTask(taskId) {
+        db.ref('users/' + uid + '/clickedVipTasks/' + taskId).once('value', (snap) => {
+            if (snap.exists() && snap.val() === true) {
+                // ইন্সটল ক্লিক ভেরিফাই হলে ব্যালেন্স যোগ করে টাস্ক ডাটা মুছে দেওয়া হচ্ছে (যাতে পুনরায় করতে পারে)
+                db.ref('users/' + uid + '/clickedVipTasks/' + taskId).remove();
+                db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
+                tg.showAlert("Verification Complete! $0.10 added to your balance.");
+            } else {
+                tg.showAlert("Verification Failed! Please click 'Install App' first and complete the setup.");
+            }
+        });
     }
 
     function setWithdrawMethod(m, p, el) {
@@ -326,20 +439,9 @@
         const currentBalance = parseFloat(state.totalEarning) || 0;
 
         if(!meth) return tg.showAlert("Please select a payment method!");
-        
-        // ১. ১০ ডলারের নিচে টাইপ করলে বা উইথড্র দিলে আটকাবে
         if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Invalid Amount! Minimum $10.00");
-        
-        // ২. ব্যালেন্স ১০ ডলার থাকলে উইথড্র বাটনে ক্লিক করলে রেফার চেক করবে
-        if(currentBalance < 10.00) {
-            return tg.showAlert("Insufficient balance! Minimum $10.00 required.");
-        }
-
-        // ৩. ব্যালেন্স ১০ ডলার আছে কিন্তু রেফার ১০টি নেই, তখন এই মেসেজ দিবে
-        if(currentReferrals < 10) {
-            return tg.showAlert("Withdraw failed! Minimum 10 referrals required to withdraw.");
-        }
-
+        if(currentBalance < 10.00) return tg.showAlert("Insufficient balance! Minimum $10.00 required.");
+        if(currentReferrals < 10) return tg.showAlert("Withdraw failed! Minimum 10 referrals required to withdraw.");
         if(amt > currentBalance) return tg.showAlert("Insufficient balance!");
         if(!addr) return tg.showAlert("Please enter your wallet address!");
 
@@ -459,26 +561,6 @@
         });
     }
 
-    function watchAd() {
-        const adLink = "https://omg10.com/4/10924120"; 
-        tg.openLink(adLink); 
-
-        const loader = document.getElementById('ad-loader');
-        const timer = document.getElementById('ad-timer');
-        loader.style.display = 'flex';
-        let timeLeft = 25; 
-        const countdown = setInterval(() => {
-            timeLeft--;
-            timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
-            if(timeLeft <= 0) {
-                clearInterval(countdown);
-                loader.style.display = 'none';
-                db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
-                tg.showAlert("Success! You earned $0.10");
-            }
-        }, 1000);
-    }
-
     function showSection(id, el) {
         ['home', 'task', 'refer', 'wallet', 'admin'].forEach(s => {
             const element = document.getElementById('section-' + s);
@@ -488,6 +570,7 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(el) el.classList.add('active');
         if(id === 'home') setTimeout(renderChart, 100);
+        if(id === 'task') checkAdCooldown();
     }
 
     function adminAddBalance() {
