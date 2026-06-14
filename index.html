@@ -125,7 +125,8 @@
     </div>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
-        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.05)</button>
+        <button id="btn-watch-ad" class="btn-main" onclick="watchAd()">Watch Video Ad ($0.05)</button>
+        <p id="ad-limit-status" style="font-size: 12px; margin-top: 8px; color: #666; text-align: center; font-weight: bold;"></p>
     </div>
 
     <!-- VIP Task 1 -->
@@ -358,6 +359,7 @@
         });
 
         loadWithdrawHistory();
+        checkAdLimit(); // এডের লিমিট চেক করা শুরু হবে
     }
 
     function setWithdrawMethod(m, p, el) {
@@ -509,22 +511,82 @@
         });
     }
 
+    // এড লিমিট ও কাউন্টডাউন ট্র্যাকিং লজিক
+    function checkAdLimit() {
+        const btn = document.getElementById('btn-watch-ad');
+        const statusText = document.getElementById('ad-limit-status');
+        
+        let adCount = parseInt(localStorage.getItem('ad_count_' + uid)) || 0;
+        let cooldownTime = localStorage.getItem('ad_cooldown_' + uid);
+        
+        if (cooldownTime) {
+            const remainingTime = Math.ceil((parseInt(cooldownTime) - Date.now()) / 1000);
+            
+            if (remainingTime > 0) {
+                btn.disabled = true;
+                btn.style.background = '#8E8E93';
+                
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                statusText.innerText = `Limit Over! Try again in ${minutes}m ${seconds}s`;
+                
+                setTimeout(checkAdLimit, 1000);
+                return;
+            } else {
+                localStorage.removeItem('ad_cooldown_' + uid);
+                localStorage.setItem('ad_count_' + uid, '0');
+                adCount = 0;
+            }
+        }
+        
+        btn.disabled = false;
+        btn.style.background = 'var(--primary)';
+        statusText.innerText = `Ads Viewed: ${adCount}/30 (Resets every 1 hour)`;
+    }
+
     function watchAd() {
+        let adCount = parseInt(localStorage.getItem('ad_count_' + uid)) || 0;
+        let cooldownTime = localStorage.getItem('ad_cooldown_' + uid);
+
+        if (cooldownTime && Date.now() < parseInt(cooldownTime)) {
+            return tg.showAlert("Please wait until the hourly cooldown ends!");
+        }
+
+        if (adCount >= 30) {
+            const oneHourLater = Date.now() + (60 * 60 * 1000);
+            localStorage.setItem('ad_cooldown_' + uid, oneHourLater);
+            checkAdLimit();
+            return tg.showAlert("You have reached the limit of 30 ads! Please wait 1 hour.");
+        }
+
         const adLink = "https://omg10.com/4/10924120"; 
         tg.openLink(adLink); 
 
         const loader = document.getElementById('ad-loader');
         const timer = document.getElementById('ad-timer');
         loader.style.display = 'flex';
-        let timeLeft = 25; 
+        let timeLeft = 15; // এড টাইমার ১৫ সেকেন্ড করা হয়েছে
+        
         const countdown = setInterval(() => {
             timeLeft--;
             timer.innerText = `Watching Ad: ${timeLeft}s remaining...`;
             if(timeLeft <= 0) {
                 clearInterval(countdown);
                 loader.style.display = 'none';
+                
                 // প্রতি এড রিওয়ার্ড ০.০৫$ করা হয়েছে
                 db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.05);
+                
+                // কাউন্টার বাড়ানো এবং সেভ করা
+                adCount++;
+                localStorage.setItem('ad_count_' + uid, adCount);
+                
+                if (adCount >= 30) {
+                    const oneHourLater = Date.now() + (60 * 60 * 1000);
+                    localStorage.setItem('ad_cooldown_' + uid, oneHourLater);
+                }
+                
+                checkAdLimit();
                 tg.showAlert("Success! You earned $0.05");
             }
         }, 1000);
@@ -555,6 +617,7 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(el) el.classList.add('active');
         if(id === 'home') setTimeout(renderChart, 100);
+        if(id === 'task') checkAdLimit(); // টাস্ক সেকশনে আসলে পুনরায় লিমিট আপডেট হবে
     }
 
     function adminAddBalance() {
