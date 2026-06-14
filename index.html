@@ -385,9 +385,9 @@
             return tg.showAlert("Insufficient balance! Minimum $10.00 required.");
         }
 
-        // ব্যালেন্স ১০ ডলার আছে কিন্তু রেফার ১০টি পূর্ণ হয়নি, তখন এই নির্দিষ্ট নোটিশটি আসবে
+        // ব্যালেন্স ১০$ বা বেশি হলে উইথড্র দিতে গেলে ১০টি রেফার না থাকলে এই নির্দিষ্ট নোটিশ আসবে
         if(currentReferrals < 10) {
-            return tg.showAlert("Minimum 10 refer need withdraw required");
+            return tg.showAlert("Minimum withdraw required 10 refer");
         }
 
         if(amt > currentBalance) return tg.showAlert("Insufficient balance!");
