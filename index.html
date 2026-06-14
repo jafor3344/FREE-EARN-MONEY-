@@ -75,7 +75,7 @@
         .w-amt { color: #f44336; font-weight: 800; }
 
         /* VIP Task Style */
-        .vip-box { display: flex; gap: 8px; margin-top: 10px; }
+        .vip-box { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 5px; }
         .btn-vip { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; color: white; }
         .btn-vip-go { background: #E65100; }
         .btn-vip-ver { background: #2E7D32; }
@@ -125,15 +125,46 @@
     </div>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
-        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.10)</button>
+        <button class="btn-main" onclick="watchAd()">Watch Video Ad ($0.05)</button>
     </div>
 
+    <!-- VIP Task 1 -->
     <div class="card">
-        <div class="card-title"><i class="fa-solid fa-gift" style="color: #E65100;"></i> VIP Task (App Install)</div>
+        <div class="card-title"><i class="fa-solid fa-gift" style="color: #E65100;"></i> VIP Task 1 (App Install)</div>
         <p style="font-size: 13px; margin: 0 0 10px 0;">Install Sponsor App to Earn <b>$0.10</b> instantly!</p>
         <div class="vip-box">
-            <button class="btn-vip btn-vip-go" onclick="startVipTask('https://omg10.com/4/10924120')"><i class="fa-solid fa-download"></i> Install App</button>
-            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask()"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+            <button class="btn-vip btn-vip-go" onclick="startVipTask(1, 'https://omg10.com/4/10924120')"><i class="fa-solid fa-download"></i> Install App</button>
+            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(1)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+        </div>
+    </div>
+
+    <!-- VIP Task 2 -->
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-gift" style="color: #E65100;"></i> VIP Task 2 (Telegram Sponsor)</div>
+        <p style="font-size: 13px; margin: 0 0 10px 0;">Install Sponsor App to Earn <b>$0.10</b> instantly!</p>
+        <div class="vip-box">
+            <button class="btn-vip btn-vip-go" onclick="startVipTask(2, 'https://omg10.com/4/10924120')"><i class="fa-solid fa-download"></i> Install App</button>
+            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(2)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+        </div>
+    </div>
+
+    <!-- VIP Task 3 -->
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-gift" style="color: #E65100;"></i> VIP Task 3 (Monetag Ad App)</div>
+        <p style="font-size: 13px; margin: 0 0 10px 0;">Install Sponsor App to Earn <b>$0.10</b> instantly!</p>
+        <div class="vip-box">
+            <button class="btn-vip btn-vip-go" onclick="startVipTask(3, 'https://omg10.com/4/10924120')"><i class="fa-solid fa-download"></i> Install App</button>
+            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(3)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+        </div>
+    </div>
+
+    <!-- VIP Task 4 -->
+    <div class="card">
+        <div class="card-title"><i class="fa-solid fa-gift" style="color: #E65100;"></i> VIP Task 4 (Special Ad Install)</div>
+        <p style="font-size: 13px; margin: 0 0 10px 0;">Install Sponsor App to Earn <b>$0.10</b> instantly!</p>
+        <div class="vip-box">
+            <button class="btn-vip btn-vip-go" onclick="startVipTask(4, 'https://omg10.com/4/10924120')"><i class="fa-solid fa-download"></i> Install App</button>
+            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(4)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
         </div>
     </div>
 </div>
@@ -195,7 +226,7 @@
     <br>
     <div class="card" style="text-align: center;">
         <div class="card-title">Referral Program</div>
-        <p>Invite friends and get <b>$0.50</b> bonus!</p>
+        <p>Invite friends and get <b>$0.20</b> bonus!</p>
         <div id="ref-count-display" style="font-size: 30px; font-weight: bold; color: var(--primary);">0</div>
         <small>Total Successful Invites</small>
         <button class="btn-main" style="margin-top:20px;" onclick="copyRef()">Copy Link</button>
@@ -267,7 +298,9 @@
 
     let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], referList: [] };
     let incomeChart = null;
-    let clickedInstall = false; // অ্যাপ ইনস্টল ট্র্যাক ভেরিয়েবল
+    
+    // ৪টি টাস্কের আলাদা আলাদা ক্লিক ট্র্যাকিং অবজেক্ট
+    let clickedTasks = { 1: false, 2: false, 3: false, 4: false };
 
     function init() {
         const name = user ? (user.first_name + (user.last_name ? ' ' + user.last_name : '')) : "Guest User";
@@ -294,10 +327,11 @@
                     referList: []
                 };
                 
+                // প্রতি রেফারের বোনাস ০.২০$ করা হয়েছে
                 if (startParam && startParam != uid) {
                     db.ref('users/' + startParam).transaction((u) => {
                         if (u) {
-                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.50;
+                            u.totalEarning = (parseFloat(u.totalEarning) || 0) + 0.20;
                             u.referrals = (parseInt(u.referrals) || 0) + 1;
                             if(!u.referList) u.referList = [];
                             u.referList.push({ name: name, id: uid });
@@ -343,17 +377,17 @@
 
         if(!meth) return tg.showAlert("Please select a payment method!");
         
-        // ১. ১০ ডলারের নিচে টাইপ করলে বা উইথড্র দিলে আটকাবে
+        // ১০ ডলারের নিচে টাইপ করলে বা উইথড্র দিলে আগে রিজেক্ট করবে 
         if(amt < 10.00 || isNaN(amt)) return tg.showAlert("Invalid Amount! Minimum $10.00");
         
-        // ২. ব্যালেন্স ১০ ডলার থাকলে উইথড্র বাটনে ক্লিক করলে রেফার চেক করবে
+        // ব্যালেন্স ১০ ডলারের কম থাকলে আটকে যাবে
         if(currentBalance < 10.00) {
             return tg.showAlert("Insufficient balance! Minimum $10.00 required.");
         }
 
-        // ৩. ব্যালেন্স ১০ ডলার আছে কিন্তু রেফার ১০টি নেই, তখন এই মেসেজ দিবে
+        // ব্যালেন্স ১০ ডলার আছে কিন্তু রেফার ১০টি পূর্ণ হয়নি, তখন এই নির্দিষ্ট নোটিশটি আসবে
         if(currentReferrals < 10) {
-            return tg.showAlert("Withdraw failed! Minimum 10 referrals required to withdraw.");
+            return tg.showAlert("Minimum 10 refer need withdraw required");
         }
 
         if(amt > currentBalance) return tg.showAlert("Insufficient balance!");
@@ -489,24 +523,24 @@
             if(timeLeft <= 0) {
                 clearInterval(countdown);
                 loader.style.display = 'none';
-                db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
-                tg.showAlert("Success! You earned $0.10");
+                // প্রতি এড রিওয়ার্ড ০.০৫$ করা হয়েছে
+                db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.05);
+                tg.showAlert("Success! You earned $0.05");
             }
         }, 1000);
     }
 
-    // VIP Task: অ্যাপ ডাউনলোড লিংকে ক্লিক করা ট্র্যাক করবে
-    function startVipTask(adLink) {
-        clickedInstall = true;
+    // VIP Tasks ট্র্যাকিং ফাংশন
+    function startVipTask(id, adLink) {
+        clickedTasks[id] = true;
         tg.openLink(adLink);
     }
 
-    // VIP Task: ইনস্টল ক্লিক না করা পর্যন্ত ব্যালেন্স যোগ হবে না
-    function verifyVipTask() {
-        if(clickedInstall) {
-            clickedInstall = false; // রিসেট
+    function verifyVipTask(id) {
+        if(clickedTasks[id]) {
+            clickedTasks[id] = false; // রিসেট
             db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
-            tg.showAlert("Success! $0.10 added for App Installation.");
+            tg.showAlert(`Success! $0.10 added for Task ${id} App Installation.`);
         } else {
             tg.showAlert("Verification Failed! Please click 'Install App' first and download it.");
         }
