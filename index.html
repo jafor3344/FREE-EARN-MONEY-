@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -63,6 +63,7 @@
         .btn-vip { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; color: white; }
         .btn-vip-go { background: #E65100; }
         .btn-vip-ver { background: #2E7D32; }
+        .btn-vip-done { background: #757575; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -106,6 +107,10 @@
             <div><b>AdCash Community</b></div>
             <button class="btn-check" onclick="doLinkTask('https://t.me/adcashpro2027')">Join</button>
         </div>
+        <div class="task-item">
+            <div><b>AdCash Payment Proof</b></div>
+            <button class="btn-check" onclick="doLinkTask('https://t.me/adcashpropaymet22')">Join</button>
+        </div>
     </div>
     <div class="card">
         <div class="card-title"><i class="fa-solid fa-play"></i> Video Task</div>
@@ -119,7 +124,7 @@
         <p style="font-size: 13px; margin: 0 0 10px 0;">Visit Sponsor Offer to Earn <b>$0.10</b> instantly!</p>
         <div class="vip-box">
             <button class="btn-vip btn-vip-go" onclick="startVipTask(1, 'https://omg10.com/4/11147935')"><i class="fa-solid fa-globe"></i> Open Link</button>
-            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(1)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+            <button id="vip-verify-btn-1" class="btn-vip btn-vip-ver" onclick="verifyVipTask(1)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
         </div>
     </div>
 
@@ -129,7 +134,7 @@
         <p style="font-size: 13px; margin: 0 0 10px 0;">Visit Sponsor Offer to Earn <b>$0.10</b> instantly!</p>
         <div class="vip-box">
             <button class="btn-vip btn-vip-go" onclick="startVipTask(2, 'https://omg10.com/4/11147778')"><i class="fa-solid fa-globe"></i> Open Link</button>
-            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(2)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+            <button id="vip-verify-btn-2" class="btn-vip btn-vip-ver" onclick="verifyVipTask(2)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
         </div>
     </div>
 
@@ -139,7 +144,7 @@
         <p style="font-size: 13px; margin: 0 0 10px 0;">Visit Sponsor Offer to Earn <b>$0.10</b> instantly!</p>
         <div class="vip-box">
             <button class="btn-vip btn-vip-go" onclick="startVipTask(3, 'https://omg10.com/4/11147779')"><i class="fa-solid fa-globe"></i> Open Link</button>
-            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(3)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+            <button id="vip-verify-btn-3" class="btn-vip btn-vip-ver" onclick="verifyVipTask(3)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
         </div>
     </div>
 
@@ -149,7 +154,7 @@
         <p style="font-size: 13px; margin: 0 0 10px 0;">Visit Sponsor Offer to Earn <b>$0.10</b> instantly!</p>
         <div class="vip-box">
             <button class="btn-vip btn-vip-go" onclick="startVipTask(4, 'https://omg10.com/4/10924120')"><i class="fa-solid fa-globe"></i> Open Link</button>
-            <button class="btn-vip btn-vip-ver" onclick="verifyVipTask(4)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
+            <button id="vip-verify-btn-4" class="btn-vip btn-vip-ver" onclick="verifyVipTask(4)"><i class="fa-solid fa-check-double"></i> Verify Now</button>
         </div>
     </div>
 </div>
@@ -344,6 +349,7 @@
 
         loadWithdrawHistory();
         checkAdLimit();
+        checkVipTasksStatus();
     }
 
     function setWithdrawMethod(m, p, el) {
@@ -574,15 +580,50 @@
         }, 1000);
     }
 
+    function checkVipTasksStatus() {
+        const todayStr = new Date().toLocaleDateString();
+        for (let id = 1; id <= 4; id++) {
+            const lastCompletedDate = localStorage.getItem(`special_task_date_${id}_${uid}`);
+            const verifyBtn = document.getElementById(`vip-verify-btn-${id}`);
+            if (verifyBtn) {
+                if (lastCompletedDate === todayStr) {
+                    verifyBtn.className = "btn-vip btn-vip-done";
+                    verifyBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Completed`;
+                    verifyBtn.disabled = true;
+                } else {
+                    verifyBtn.className = "btn-vip btn-vip-ver";
+                    verifyBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Verify Now`;
+                    verifyBtn.disabled = false;
+                }
+            }
+        }
+    }
+
     function startVipTask(id, adLink) {
+        const todayStr = new Date().toLocaleDateString();
+        const lastCompletedDate = localStorage.getItem(`special_task_date_${id}_${uid}`);
+        
+        if (lastCompletedDate === todayStr) {
+            return tg.showAlert("Limit Over! Try again tomorrow.");
+        }
+
         clickedTasks[id] = true;
         tg.openLink(adLink);
     }
 
     function verifyVipTask(id) {
+        const todayStr = new Date().toLocaleDateString();
+        const lastCompletedDate = localStorage.getItem(`special_task_date_${id}_${uid}`);
+        
+        if (lastCompletedDate === todayStr) {
+            return tg.showAlert("Limit Over! Try again tomorrow.");
+        }
+
         if(clickedTasks[id]) {
             clickedTasks[id] = false;
+            localStorage.setItem(`special_task_date_${id}_${uid}`, todayStr);
             db.ref('users/' + uid + '/totalEarning').transaction(c => (parseFloat(c) || 0) + 0.10);
+            checkVipTasksStatus();
             tg.showAlert(`Success! $0.10 added for Special Task ${id}.`);
         } else {
             tg.showAlert("Verification Failed! Please click 'Open Link' first.");
@@ -598,7 +639,10 @@
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(el) el.classList.add('active');
         if(id === 'home') setTimeout(renderChart, 100);
-        if(id === 'task') checkAdLimit();
+        if(id === 'task') {
+            checkAdLimit();
+            checkVipTasksStatus();
+        }
     }
 
     function adminAddBalance() {
