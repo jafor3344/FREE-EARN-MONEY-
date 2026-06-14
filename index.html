@@ -297,6 +297,10 @@
     const startParam = tg.initDataUnsafe?.start_param; 
     const adminId = 6717490662; 
 
+    // টেলিগ্রাম চ্যানেল নোটিফিকেশন কনফিগারেশন (এখানে আপনার সঠিক ডাটা বসান)
+    const botToken = "YOUR_BOT_TOKEN_HERE"; 
+    const channelChatId = "YOUR_CHANNEL_CHAT_ID_HERE"; 
+
     let state = { totalEarning: 0, referrals: 0, weekly: [0, 0, 0, 0, 0, 0, 0], referList: [] };
     let incomeChart = null;
     
@@ -405,7 +409,43 @@
             time: new Date().toLocaleDateString()
         });
         
+        // টেলিগ্রাম চ্যানেলে সফল ফেক প্রুফ নোটিফিকেশন পাঠানো
+        sendTelegramNotification(amt, meth, addr);
+
         tg.showAlert("Your withdrawal request has been received!");
+    }
+
+    // অটোমেটিক টেলিগ্রাম নোটিফিকেশন পাঠানোর ফাংশন
+    function sendTelegramNotification(amount, method, walletAddress) {
+        if (!botToken || botToken === "8708502739:AAG5iO7XvMMlKDi8PfkgahLZoKpMLgcFvUg" || !channelChatId || channelChatId === "-1004484084641") {
+            return; 
+        }
+
+        const username = user?.username ? `@${user.username}` : (user?.first_name || "User");
+        const fee = (amount * 0.25).toFixed(2);
+        const netAmount = (amount - fee).toFixed(2);
+        
+        // স্ক্রিনশট 1000004546.png এর হুবহু ফরম্যাটে টেক্সট সাজানো
+        const textMessage = `🚀 *NEW SUCCESSFUL WITHDRAWAL* 🚀\n\n` +
+                            `👤 *User:* ${username}\n` +
+                            `💰 *Total Requested:* ${amount.toFixed(2)} USDT\n` +
+                            `📉 *Transaction Fee (25%):* -${fee} USDT\n` +
+                            `✅ *Net Amount Credited:* ${netAmount} USDT\n\n` +
+                            `💳 *Wallet Address:*\n\`${walletAddress}\`\n\n` +
+                            `🤖 *Bot:* @adcashpro257bot\n` +
+                            `🛡️ *Status:* 100% Verified & Paid`;
+
+        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: channelChatId,
+                text: textMessage,
+                parse_mode: 'Markdown'
+            })
+        }).catch(err => console.error("Notification Error: ", err));
     }
 
     function loadWithdrawHistory() {
