@@ -1,302 +1,262 @@
+
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Gear Speed Car Racing</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            background: #111;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            max-width: 405px;
-            max-height: 720px;
-            background: #222;
-            box-shadow: 0 0 25px rgba(0,0,0,0.9);
-            overflow: hidden;
-            border: 4px solid #444;
-            border-radius: 12px;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-        }
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 {
-            color: #00ffcc;
-            font-size: 28px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0,255,204,0.6);
-        }
-        p {
-            color: #ddd;
-            font-size: 15px;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-        .btn {
-            background: linear-gradient(135deg, #00ffcc, #0077ff);
-            color: #111;
-            border: none;
-            padding: 14px 38px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 20px rgba(0,255,204,0.4);
-        }
-        .ui-panel {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            display: flex;
-            justify-content: space-between;
-            color: #fff;
-            font-size: 16px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px #000;
-            z-index: 5;
-        }
-        .gear-indicator {
-            background: rgba(0,0,0,0.5);
-            padding: 5px 12px;
-            border-radius: 20px;
-            border: 2px solid #00ffcc;
-            color: #00ffcc;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highway Rush V2</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101820;color:white;
+ font-family:Arial;text-align:center;
+}
+h2{color:#ffd43b;margin:10px}
+.hud{
+ display:flex;justify-content:space-around;
+ padding:10px;font-weight:bold;
+}
+canvas{
+ width:min(100%,420px);
+ height:auto;background:#287b36;
+ border:3px solid white;border-radius:10px;
+ display:block;margin:auto;
+ touch-action:pan-y;
+}
+.controls{
+ display:flex;justify-content:center;
+ gap:12px;margin:12px auto;max-width:420px;
+}
+button{
+ padding:14px;border:0;border-radius:12px;
+ background:#ffd43b;font-size:19px;
+ font-weight:bold;flex:1;
+}
+#start{background:#16d98b}
+</style>
 </head>
 <body>
+<h2>🏎️ HIGHWAY RUSH V2</h2>
 
-<div id="game-container">
-    <div class="ui-panel">
-        <div>স্কোর: <span id="scoreVal">0</span></div>
-        <div class="gear-indicator">গিয়ার: <span id="gearVal">1</span></div>
-    </div>
-    <canvas id="gameCanvas"></canvas>
-
-    <div id="overlay">
-        <h1>GEAR SPEED RACING</h1>
-        <p>আঙুল যেদিকে টানবেন গাড়ি সেদিকে যাবে!<br>স্ক্রিনে চেপে ধরে রাখলে সুপার বুস্ট (জোর) হবে।</p>
-        <button class="btn" onclick="startGame()">রেস শুরু করুন</button>
-    </div>
+<div class="hud">
+ <span>🏆 <b id="score">0</b></span>
+ <span>🪙 <b id="coin">0</b></span>
+ <span>LEVEL <b id="level">1</b></span>
 </div>
 
+<canvas id="game" width="400" height="650"></canvas>
+
+<div class="controls">
+ <button id="left">⬅</button>
+ <button id="nitro">⚡ NITRO</button>
+ <button id="right">➡</button>
+</div>
+<button id="start">START / RESTART</button>
+<p id="status">Avoid traffic and collect coins!</p>
+
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+const cv=document.getElementById("game");
+const ctx=cv.getContext("2d");
 
-    canvas.width = 405;
-    canvas.height = 720;
+let player={lane:1,y:535};
+let cars=[],rocks=[],money=[];
+let score=0,coin=0,level=1;
+let speed=4,frame=0,road=0;
+let running=false,nitro=0;
+let best=0;
 
-    let gameState = 'START'; 
-    let score = 0;
-    let baseSpeed = 4;
-    let roadSpeed = 4;
-    let boostActive = false;
-    let currentGear = 1;
+const lanes=[75,175,275];
 
-    let playerCar = {
-        x: canvas.width / 2 - 25,
-        y: canvas.height - 130,
-        width: 50,
-        height: 90
-    };
+function car(x,y,color){
+ ctx.fillStyle="#111";
+ ctx.fillRect(x+2,y+8,9,17);
+ ctx.fillRect(x+31,y+8,9,17);
+ ctx.fillRect(x+2,y+49,9,17);
+ ctx.fillRect(x+31,y+49,9,17);
 
-    let roadOffset = 0;
-    let obstacles = [];
+ ctx.fillStyle=color;
+ ctx.beginPath();
+ ctx.roundRect(x+5,y,32,70,9);
+ ctx.fill();
 
-    // টাচ বা মাউস ড্র্যাগ কন্ট্রোল (যেদিকে আঙুল দেবেন গাড়ি সেদিকে যাবে)
-    let isDragging = false;
-    function handleMove(clientX) {
-        if (gameState !== 'PLAYING') return;
-        const rect = canvas.getBoundingClientRect();
-        let x = (clientX - rect.left) * (canvas.width / rect.width);
-        playerCar.x = x - playerCar.width / 2;
-    }
+ ctx.fillStyle="#9eeaff";
+ ctx.fillRect(x+10,y+12,22,18);
+ ctx.fillRect(x+10,y+43,22,10);
+ ctx.fillStyle="#fff";
+ ctx.fillRect(x+8,y+63,8,4);
+ ctx.fillRect(x+27,y+63,8,4);
+}
 
-    window.addEventListener('mousedown', () => { boostActive = true; currentGear = 2; document.getElementById('gearVal').innerText = '2 (BOOST)'; });
-    window.addEventListener('mouseup', () => { boostActive = false; currentGear = 1; document.getElementById('gearVal').innerText = '1'; });
+function background(){
+ ctx.fillStyle="#23783b";
+ ctx.fillRect(0,0,400,650);
 
-    window.addEventListener('touchstart', (e) => { 
-        boostActive = true; 
-        currentGear = 2; 
-        document.getElementById('gearVal').innerText = '2 (BOOST)';
-        handleMove(e.touches[0].clientX);
-        e.preventDefault(); 
-    }, { passive: false });
+ // Trees
+ for(let i=0;i<8;i++){
+  let y=(i*100+road)%750-80;
+  ctx.fillStyle="#704421";
+  ctx.fillRect(17,y+15,8,20);
+  ctx.fillStyle="#08652d";
+  ctx.beginPath();
+  ctx.arc(21,y,18,0,7);ctx.fill();
+  ctx.fillStyle="#704421";
+  ctx.fillRect(375,y+15,8,20);
+  ctx.fillStyle="#08652d";
+  ctx.beginPath();
+  ctx.arc(379,y,18,0,7);ctx.fill();
+ }
 
-    window.addEventListener('touchend', () => { 
-        boostActive = false; 
-        currentGear = 1; 
-        document.getElementById('gearVal').innerText = '1'; 
-    });
+ ctx.fillStyle="#393939";
+ ctx.fillRect(45,0,310,650);
+ ctx.fillStyle="#fff";
+ ctx.fillRect(43,0,3,650);
+ ctx.fillRect(354,0,3,650);
 
-    window.addEventListener('mousemove', (e) => { handleMove(e.clientX); });
-    window.addEventListener('touchmove', (e) => { 
-        handleMove(e.touches[0].clientX); 
-        e.preventDefault(); 
-    }, { passive: false });
+ ctx.fillStyle="#ffdc39";
+ for(let y=-80;y<700;y+=110)
+  ctx.fillRect(195,y+road,9,55);
 
-    function startGame() {
-        gameState = 'PLAYING';
-        score = 0;
-        obstacles = [];
-        playerCar.x = canvas.width / 2 - 25;
-        document.getElementById('overlay').style.display = 'none';
-    }
+ road=(road+speed)%110;
+}
 
-    function gameOver() {
-        gameState = 'GAMEOVER';
-        document.getElementById('overlay').innerHTML = `
-            <h1 style="color: #ff3333;">দুর্ঘটনা! গেম ওভার</h1>
-            <p>আপনার মোট স্কোর: ${Math.floor(score)}</p>
-            <button class="btn" onclick="startGame()">পুনরায় খেলুন</button>
-        `;
-        document.getElementById('overlay').style.display = 'flex';
-    }
+function spawn(){
+ if(frame%65===0){
+  let lane=Math.floor(Math.random()*3);
+  cars.push({
+   lane,y:-90,
+   color:["#09b9ff","#ffb000","#b95cff","#eeeeee"][Math.floor(Math.random()*4)]
+  });
+ }
+ if(frame%110===0){
+  rocks.push({lane:Math.floor(Math.random()*3),y:-40});
+ }
+ if(frame%80===0){
+  money.push({lane:Math.floor(Math.random()*3),y:-30});
+ }
+}
 
-    function update() {
-        if (gameState !== 'PLAYING') return;
+function collision(y1,y2){
+ return Math.abs(y1-y2)<55;
+}
 
-        // গিয়ার ও বুস্ট অনুযায়ী স্পিড নির্ধারণ (চেপে ধরলে জোর বা স্পিড বেড়ে যাবে)
-        roadSpeed = boostActive ? baseSpeed * 2.5 : baseSpeed;
-        roadOffset += roadSpeed;
-        score += roadSpeed * 0.1;
-        document.getElementById('scoreVal').innerText = Math.floor(score);
+function update(){
+ frame++;
+ score++;
+ level=1+Math.floor(score/500);
+ speed=4+level*.6+(nitro>0?5:0);
 
-        // রাস্তার সীমানার মধ্যে রাখা
-        if (playerCar.x < 55) playerCar.x = 55;
-        if (playerCar.x > canvas.width - 55 - player.width) playerCar.x = canvas.width - 55 - player.width;
+ if(nitro>0)nitro--;
 
-        // বাধা বা বিপক্ষ গাড়ি তৈরি
-        if (Math.random() < 0.03) {
-            let laneX = [80, 175, 270][Math.floor(Math.random() * 3)];
-            obstacles.push({
-                x: laneX,
-                y: -100,
-                width: 50,
-                height: 90,
-                color: ['#ff3366', '#3366ff', '#9933ff', '#ff9900'][Math.floor(Math.random() * 4)]
-            });
-        }
+ spawn();
 
-        // বাধা আপডেট ও কলিশন চেক
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-            obstacles[i].y += roadSpeed * 0.8;
+ cars.forEach(o=>{
+  o.y+=speed;
+  if(o.lane===player.lane&&collision(player.y,o.y))
+   gameOver();
+ });
 
-            if (
-                playerCar.x < obstacles[i].x + obstacles[i].width &&
-                playerCar.x + playerCar.width > obstacles[i].x &&
-                playerCar.y < obstacles[i].y + obstacles[i].height &&
-                player.y + player.height > obstacles[i].y
-            ) {
-                gameOver();
-            }
+ rocks.forEach(o=>{
+  o.y+=speed;
+  if(o.lane===player.lane&&collision(player.y,o.y))
+   gameOver();
+ });
 
-            if (obstacles[i].y > canvas.height) {
-                obstacles.splice(i, 1);
-            }
-        }
-    }
+ money.forEach(o=>{
+  o.y+=speed;
+  if(o.lane===player.lane&&collision(player.y,o.y)){
+   o.y=1000;coin++;
+  }
+ });
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+ cars=cars.filter(o=>o.y<700);
+ rocks=rocks.filter(o=>o.y<700);
+ money=money.filter(o=>o.y<700);
 
-        // ঘাস ব্যাকগ্রাউন্ড
-        ctx.fillStyle = '#1e7e34';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+ document.getElementById("score").textContent=score;
+ document.getElementById("coin").textContent=coin;
+ document.getElementById("level").textContent=level;
+}
 
-        // রাস্তা
-        ctx.fillStyle = '#333';
-        ctx.fillRect(50, 0, canvas.width - 100, canvas.height);
+function draw(){
+ background();
 
-        // বর্ডার
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(45, 0, 8, canvas.height);
-        ctx.fillRect(canvas.width - 53, 0, 8, canvas.height);
+ cars.forEach(o=>car(lanes[o.lane],o.y,o.color));
 
-        // ডিভাইডার লাইন
-        ctx.strokeStyle = '#f1c40f';
-        ctx.lineWidth = 6;
-        ctx.setLineDash([30, 30]);
-        ctx.lineDashOffset = -roadOffset;
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height);
-        ctx.stroke();
-        ctx.setLineDash([]);
+ rocks.forEach(o=>{
+  ctx.fillStyle="#aaa";
+  ctx.beginPath();
+  ctx.moveTo(lanes[o.lane]+3,o.y+35);
+  ctx.lineTo(lanes[o.lane]+18,o.y);
+  ctx.lineTo(lanes[o.lane]+44,o.y+10);
+  ctx.lineTo(lanes[o.lane]+48,o.y+38);
+  ctx.closePath();ctx.fill();
+ });
 
-        // বাধা গাড়িগুলো ড্র
-        for (let obs of obstacles) {
-            ctx.fillStyle = obs.color;
-            ctx.beginPath();
-            ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
-            ctx.fill();
+ money.forEach(o=>{
+  ctx.fillStyle="#ffd700";
+  ctx.beginPath();
+  ctx.arc(lanes[o.lane]+21,o.y,13,0,7);
+  ctx.fill();
+  ctx.fillStyle="#7b4d00";
+  ctx.font="bold 15px Arial";
+  ctx.fillText("$",lanes[o.lane]+16,o.y+5);
+ });
 
-            ctx.fillStyle = '#111';
-            ctx.fillRect(obs.x + 8, obs.y + 15, obs.width - 16, 20);
-        }
+ car(lanes[player.lane],player.y,
+  nitro>0?"#00e5ff":"#ff3030");
 
-        // প্লেয়ার গাড়ি ড্র
-        ctx.save();
-        ctx.translate(playerCar.x + playerCar.width / 2, playerCar.y + playerCar.height / 2);
-        if (boostActive) {
-            ctx.fillStyle = '#00ffff';
-            ctx.fillRect(-15, playerCar.height / 2, 30, 15);
-        }
+ if(nitro>0){
+  ctx.fillStyle="#00e5ff";
+  ctx.fillRect(lanes[player.lane]+16,610,10,20);
+ }
+}
 
-        ctx.fillStyle = '#ffcc00';
-        ctx.beginPath();
-        ctx.roundRect(-playerCar.width / 2, -playerCar.height / 2, playerCar.width, playerCar.height, 10);
-        ctx.fill();
+function loop(){
+ if(!running)return;
+ update();
+ if(!running)return;
+ draw();
+ requestAnimationFrame(loop);
+}
 
-        ctx.fillStyle = '#111';
-        ctx.fillRect(-playerCar.width / 2 + 8, -playerCar.height / 2 + 15, playerCar.width - 16, 20);
-        ctx.restore();
-    }
+function gameOver(){
+ running=false;
+ document.getElementById("status").innerHTML=
+ "💥 GAME OVER | Score: "+score+" | Coins: "+coin;
+}
 
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
+function startGame(){
+ player.lane=1;
+ cars=[];rocks=[];money=[];
+ score=0;coin=0;level=1;
+ speed=4;frame=0;road=0;nitro=0;
+ running=true;
+ document.getElementById("status").textContent="🏁 Race Started!";
+ loop();
+}
 
-    loop();
+function move(d){
+ if(running)player.lane=Math.max(0,Math.min(2,player.lane+d));
+}
+
+document.getElementById("left").onclick=()=>move(-1);
+document.getElementById("right").onclick=()=>move(1);
+document.getElementById("nitro").onclick=()=>{
+ if(running)nitro=100;
+};
+document.getElementById("start").onclick=startGame;
+
+let touchStart=0;
+cv.addEventListener("touchstart",e=>{
+ touchStart=e.touches[0].clientX;
+},{passive:true});
+cv.addEventListener("touchend",e=>{
+ let dx=e.changedTouches[0].clientX-touchStart;
+ if(Math.abs(dx)>25)move(dx>0?1:-1);
+},{passive:true});
+
+background();
+car(lanes[1],535,"#ff3030");
 </script>
-
 </body>
 </html>
