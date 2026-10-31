@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Maze Dash - Cute Cat Edition</title>
+    <title>Speed Car Racing - Shorts Edition</title>
     <style>
         * {
             box-sizing: border-box;
@@ -21,17 +21,17 @@
             align-items: center;
             height: 100vh;
         }
-        /* ইউটিউব শর্টসের জন্য নিখুঁত ৯:১৬ ফ্রেম এবং ছবির মতো ব্যাকগ্রাউন্ড */
+        /* ৯:১৬ ভার্টিক্যাল শর্টস ফ্রেম */
         #game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             max-width: 405px;
             max-height: 720px;
-            background: #e6953b;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            background: #222;
+            box-shadow: 0 0 25px rgba(0,0,0,0.9);
             overflow: hidden;
-            border: 4px solid #b86b20;
+            border: 4px solid #444;
             border-radius: 12px;
         }
         canvas {
@@ -56,39 +56,54 @@
             padding: 20px;
         }
         h1 {
-            color: #ffcc00;
-            font-size: 28px;
+            color: #00ffcc;
+            font-size: 30px;
             margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(255,204,0,0.5);
+            text-shadow: 0 0 10px rgba(0,255,204,0.6);
         }
         p {
-            color: #eee;
-            font-size: 15px;
-            margin-bottom: 25px;
-            line-height: 1.4;
+            color: #ddd;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.5;
         }
         .btn {
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
-            color: white;
+            background: linear-gradient(135deg, #00ffcc, #0077ff);
+            color: #111;
             border: none;
-            padding: 12px 35px;
+            padding: 14px 38px;
             font-size: 18px;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+            box-shadow: 0 5px 20px rgba(0,255,204,0.4);
+            transition: 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        #ui-score {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 5;
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    <div id="ui-score">স্কোর: <span id="scoreVal">0</span></div>
     <canvas id="gameCanvas"></canvas>
 
     <div id="overlay">
-        <h1>MAZE ESCAPE</h1>
-        <p>স্ক্রিনে আঙুল দিয়ে বিড়ালটি টেনে নিন[span_2](start_span)[span_2](end_span)!<br>করাত ও বাধা এড়িয়ে ফিনিশ লাইনে পৌঁছান[span_3](start_span)[span_3](end_span)。</p>
-        <button class="btn" onclick="startGame()">প্লে করুন</button>
+        <h1>SPEED CAR RACING</h1>
+        <p>স্ক্রিনে আঙুল দিয়ে চেপে ধরুন গাড়ি দ্রুত ছুটবে!<br>অন্য গাড়ি ও বাধা এড়িয়ে সামনে এগিয়ে যান।</p>
+        <button class="btn" onclick="startGame()">রেস শুরু করুন</button>
     </div>
 </div>
 
@@ -99,112 +114,90 @@
     canvas.width = 405;
     canvas.height = 720;
 
-    let gameState = 'START'; 
+    let gameState = 'START'; // START, PLAYING, GAMEOVER
+    let score = 0;
+    let roadSpeed = 5;
+    let boostActive = false;
 
-    // প্লেয়ার (ছবির স্টাইলে বক্সের ভেতর ইউনিক কিউট বিড়াল)
-    let player = {
-        x: 350,
-        y: 130,
-        size: 38,
-        isDragging: false
+    // প্লেয়ার গাড়ি
+    let playerCar = {
+        x: canvas.width / 2 - 25,
+        y: canvas.height - 130,
+        width: 50,
+        height: 90,
+        speed: 4
     };
 
-    // ছবির সাথে হুবহু মিল রেখে পাথরের ব্লক ও দেওয়ালসমূহ[span_4](start_span)[span_4](end_span)
-    let walls = [
-        { x: 0, y: 0, w: 405, h: 40 },
-        { x: 0, y: 220, w: 280, h: 40 },
-        { x: 120, y: 400, w: 285, h: 40 },
-        { x: 0, y: 560, w: 220, h: 40 },
-        { x: 120, y: 220, w: 40, h: 380 },
-        { x: 280, y: 400, w: 40, h: 320 }
-    ];
+    // রাস্তা ও ব্যাকগ্রাউন্ড ল্যান্ডস্কেপ ভ্যারিয়েবল
+    let roadOffset = 0;
+    let obstacles = [];
+    let scenery = [];
 
-    // ছবির মতো বড় বড় ঘূর্ণমান করাত বাধা (Saw Blades)[span_5](start_span)[span_5](end_span)
-    let hazards = [
-        { x: 100, y: 130, radius: 28, angle: 0, speed: 0.1 },
-        { x: 220, y: 130, radius: 28, angle: 0, speed: -0.12 }
-    ];
+    // ওয়েব অডিও সাউন্ড ইফেক্ট জেনারেটর
+    let audioCtx = null;
+    function playSound(type) {
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
 
-    // ফিনিশিং লাইন (শেষ গোল্ডেন পয়েন্ট)
-    let finishLine = {
-        x: 40,
-        y: 640,
-        width: 60,
-        height: 50
-    };
-
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-        const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-        return {
-            x: (clientX - rect.left) * (canvas.width / rect.width),
-            y: (clientY - rect.top) * (canvas.height / rect.height)
-        };
+            if (type === 'boost') {
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(350, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'crash') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        } catch(e) {}
     }
 
-    canvas.addEventListener('mousedown', startDrag);
-    canvas.addEventListener('mousemove', dragMove);
-    canvas.addEventListener('mouseup', endDrag);
+    // টাচ এবং মাউস কন্ট্রোল (চেপে ধরলে জোর বা স্পিড বাড়বে)
+    window.addEventListener('mousedown', () => { boostActive = true; playSound('boost'); });
+    window.addEventListener('mouseup', () => { boostActive = false; });
 
-    canvas.addEventListener('touchstart', (e) => { startDrag(e); e.preventDefault(); }, { passive: false });
-    canvas.addEventListener('touchmove', (e) => { dragMove(e); e.preventDefault(); }, { passive: false });
-    canvas.addEventListener('touchend', endDrag);
+    window.addEventListener('touchstart', (e) => { boostActive = true; playSound('boost'); e.preventDefault(); }, { passive: false });
+    window.addEventListener('touchend', () => { boostActive = false; });
 
-    function startDrag(e) {
+    // মাউস বা টাচ দিয়ে ডানে-বামে গাড়ি সরানোর জন্য
+    window.addEventListener('mousemove', (e) => {
         if (gameState !== 'PLAYING') return;
-        const pos = getPos(e);
-        if (
-            pos.x > player.x - player.size/2 - 10 &&
-            pos.x < player.x + player.size/2 + 10 &&
-            pos.y > player.y - player.size/2 - 10 &&
-            pos.y < player.y + player.size/2 + 10
-        ) {
-            player.isDragging = true;
-        }
-    }
+        const rect = canvas.getBoundingClientRect();
+        let mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+        playerCar.x = mouseX - playerCar.width / 2;
+    });
 
-    function dragMove(e) {
-        if (!player.isDragging || gameState !== 'PLAYING') return;
-        const pos = getPos(e);
-        player.x = pos.x;
-        player.y = pos.y;
-
-        // বর্ডারের ভেতরে রাখা
-        let half = player.size / 2;
-        if (player.x < half) player.x = half;
-        if (player.x > canvas.width - half) player.x = canvas.width - half;
-        if (player.y < half) player.y = half;
-        if (player.y > canvas.height - half) player.y = canvas.height - half;
-    }
-
-    function endDrag() {
-        player.isDragging = false;
-    }
+    window.addEventListener('touchmove', (e) => {
+        if (gameState !== 'PLAYING') return;
+        const rect = canvas.getBoundingClientRect();
+        let touchX = (e.touches[0].clientX - rect.left) * (canvas.width / rect.width);
+        playerCar.x = touchX - playerCar.width / 2;
+        e.preventDefault();
+    }, { passive: false });
 
     function startGame() {
         gameState = 'PLAYING';
-        player.x = 350;
-        player.y = 130;
+        score = 0;
+        obstacles = [];
+        playerCar.x = canvas.width / 2 - 25;
         document.getElementById('overlay').style.display = 'none';
     }
 
     function gameOver() {
         gameState = 'GAMEOVER';
+        playSound('crash');
         document.getElementById('overlay').innerHTML = `
-            <h1 style="color: #ff3333;">আরে না! কাটা পড়েছেন!</h1>
-            <p>আবার চেষ্টা করুন[span_6](start_span)[span_6](end_span)!</p>
-            <button class="btn" onclick="startGame()">পুনরায় চেষ্টা</button>
-        `;
-        document.getElementById('overlay').style.display = 'flex';
-    }
-
-    function winGame() {
-        gameState = 'WIN';
-        document.getElementById('overlay').innerHTML = `
-            <h1 style="color: #00ffcc;">অভিনন্দন! জয়ী হয়েছেন[span_7](start_span)[span_7](end_span)!</h1>
-            <p>সফলভাবে ফিনিশ লাইনে পৌঁছেছেন[span_8](start_span)[span_8](end_span)。</p>
-            <button class="btn" onclick="startGame()">আবার খেলুন</button>
+            <h1 style="color: #ff3333;">দুর্ঘটনা! গেম ওভার</h1>
+            <p>আপনার মোট স্কোর: ${Math.floor(score)}</p>
+            <button class="btn" onclick="startGame()">পুনরায় খেলুন</button>
         `;
         document.getElementById('overlay').style.display = 'flex';
     }
@@ -212,132 +205,114 @@
     function update() {
         if (gameState !== 'PLAYING') return;
 
-        let half = player.size / 2;
-        // দেওয়াল বা ব্লকের সাথে সংঘর্ষ চেক[span_9](start_span)[span_9](end_span)
-        for (let w of walls) {
+        // স্পিড এবং বুস্ট লজিক (চেপে ধরলে স্পিড দ্বিগুণ হবে)
+        let currentSpeed = boostActive ? roadSpeed * 2.2 : roadSpeed;
+        roadOffset += currentSpeed;
+        score += currentSpeed * 0.1;
+        document.getElementById('scoreVal').innerText = Math.floor(score);
+
+        // রাস্তার সীমানার মধ্যে প্লেয়ার গাড়ি রাখা
+        if (playerCar.x < 55) playerCar.x = 55;
+        if (playerCar.x > canvas.width - 55 - player.width) playerCar.x = canvas.width - 55 - player.width;
+
+        // বাধা বা অন্য গাড়ি তৈরি করা
+        if (Math.random() < 0.03) {
+            let laneX = [80, 175, 270][Math.floor(Math.random() * 3)];
+            obstacles.push({
+                x: laneX,
+                y: -100,
+                width: 50,
+                height: 90,
+                color: ['#ff3366', '#3366ff', '#9933ff', '#ff9900'][Math.floor(Math.random() * 4)]
+            });
+        }
+
+        // বাধা আপডেট ও কলিশন চেক
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            obstacles[i].y += currentSpeed * 0.8;
+
+            // কলিশন (ধাক্কা লাগলে গেম ওভার)
             if (
-                player.x + half > w.x &&
-                player.x - half < w.x + w.w &&
-                player.y + half > w.y &&
-                player.y - half < w.y + w.h
+                playerCar.x < obstacles[i].x + obstacles[i].width &&
+                playerCar.x + playerCar.width > obstacles[i].x &&
+                playerCar.y < obstacles[i].y + obstacles[i].height &&
+                player.y + player.height > obstacles[i].y
             ) {
                 gameOver();
             }
-        }
 
-        // ঘূর্ণমান করাতের সাথে ধাক্কা চেক[span_10](start_span)[span_10](end_span)
-        for (let h of hazards) {
-            h.angle += h.speed;
-            const dist = Math.hypot(player.x - h.x, player.y - h.y);
-            if (dist < half + h.radius - 8) {
-                gameOver();
+            // স্ক্রিনের বাইরে চলে গেলে রিমুভ করা
+            if (obstacles[i].y > canvas.height) {
+                obstacles.splice(i, 1);
             }
-        }
-
-        // ফিনিশ লাইন চেক[span_11](start_span)[span_11](end_span)
-        if (
-            player.x > finishLine.x &&
-            player.x < finishLine.x + finishLine.width &&
-            player.y > finishLine.y &&
-            player.y < finishLine.y + finishLine.height
-        ) {
-            winGame();
         }
     }
 
+    // গ্রাফিক্স ড্র করা
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // পাথরের টেক্সচারযুক্ত দেওয়াল বা ব্লক[span_12](start_span)[span_12](end_span)
-        ctx.fillStyle = '#3e4a59';
-        for (let w of walls) {
-            ctx.fillRect(w.x, w.y, w.w, w.h);
-            ctx.strokeStyle = '#5a6b82';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(w.x, w.y, w.w, w.h);
-        }
+        // গ্রিন ব্যাকগ্রাউন্ড (ঘাস)
+        ctx.fillStyle = '#1e7e34';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // ফিনিশ লাইন (গোল্ডেন জোন)[span_13](start_span)[span_13](end_span)
-        ctx.fillStyle = '#ffcc00';
-        ctx.fillRect(finishLine.x, finishLine.y, finishLine.width, finishLine.height);
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('FINISH', finishLine.x + finishLine.width / 2, finishLine.y + 30);
+        // মূল পিচ ঢালাই রাস্তা
+        ctx.fillStyle = '#333';
+        ctx.fillRect(50, 0, canvas.width - 100, canvas.height);
 
-        // ঘূর্ণমান করাত বাধা (Saw Blades)[span_14](start_span)[span_14](end_span)
-        for (let h of hazards) {
-            ctx.save();
-            ctx.translate(h.x, h.y);
-            ctx.rotate(h.angle);
+        // রাস্তার দুইপাশের সাদা বর্ডার লাইন
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(45, 0, 8, canvas.height);
+        ctx.fillRect(canvas.width - 53, 0, 8, canvas.height);
 
-            ctx.fillStyle = '#99aab8';
+        // রাস্তার মাঝের ডিভাইডার লাইন (মুভিং ইফেক্ট)
+        ctx.strokeStyle = '#f1c40f';
+        ctx.lineWidth = 6;
+        ctx.setLineDash([30, 30]);
+        ctx.lineDashOffset = -roadOffset;
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]); // রিসেট
+
+        // বাধা বা বিপক্ষ গাড়িগুলো ড্র করা
+        for (let obs of obstacles) {
+            ctx.fillStyle = obs.color;
             ctx.beginPath();
-            ctx.arc(0, 0, h.radius, 0, Math.PI * 2);
+            ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
             ctx.fill();
 
-            // করাতের দাঁতগুলো[span_15](start_span)[span_15](end_span)
-            ctx.fillStyle = '#fff';
-            for (let i = 0; i < 8; i++) {
-                ctx.rotate(Math.PI / 4);
-                ctx.fillRect(-3, -h.radius - 6, 6, 7);
-            }
-            ctx.restore();
+            // উইন্ডস্ক্রিন ও লাইট
+            ctx.fillStyle = '#111';
+            ctx.fillRect(obs.x + 8, obs.y + 15, obs.width - 16, 20);
+            ctx.fillRect(obs.x + 8, obs.y + 60, obs.width - 16, 15);
         }
 
-        // প্লেয়ার: ছবির মতো কাঁচের বাবল ও ইউনিক কিউট বিড়াল ক্যারেক্টার[span_16](start_span)[span_16](end_span)
+        // প্লেয়ার গাড়ি ড্র করা (সুন্দর ডিজাইন)
         ctx.save();
-        ctx.translate(player.x, player.y);
+        ctx.translate(playerCar.x + playerCar.width / 2, playerCar.y + playerCar.height / 2);
+        if (boostActive) {
+            // বুস্ট দিলে পেছনের ইফেক্ট
+            ctx.fillStyle = '#00ffff';
+            ctx.fillRect(-15, playerCar.height / 2, 30, 15);
+        }
 
-        // বাবল গ্লো
+        ctx.fillStyle = '#ffcc00';
         ctx.beginPath();
-        ctx.arc(0, 0, (player.size/2) + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0, 204, 255, 0.8)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // বিড়ালের ব্যাকগ্রাউন্ড বক্স বা বৃত্ত
-        ctx.fillStyle = '#222';
-        ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
-        ctx.strokeStyle = '#ffcc00';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-player.size/2, -player.size/2, player.size, player.size);
-
-        // বিড়ালের ফেস ও কান (অন্য কার্টুনের সাথে মিল নেই এমন ইউনিক ডিজাইন)
-        ctx.fillStyle = '#b0bec5'; // গ্রে কালার বিড়াল
-        ctx.beginPath();
-        ctx.arc(0, 2, 14, 0, Math.PI * 2);
+        ctx.roundRect(-playerCar.width / 2, -playerCar.height / 2, playerCar.width, playerCar.height, 10);
         ctx.fill();
 
-        // কান দুটি
-        ctx.beginPath();
-        ctx.moveTo(-12, -6);
-        ctx.lineTo(-18, -18);
-        ctx.lineTo(-4, -12);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(12, -6);
-        ctx.lineTo(18, -18);
-        ctx.lineTo(4, -12);
-        ctx.fill();
-
-        // বড় গোল গোল চোখ
-        ctx.fillStyle = '#ffeb3b';
-        ctx.beginPath();
-        ctx.arc(-5, 0, 4.5, 0, Math.PI * 2);
-        ctx.arc(5, 0, 4.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(-5, 0, 2, 0, Math.PI * 2);
-        ctx.arc(5, 0, 2, 0, Math.PI * 2);
-        ctx.fill();
-
+        // উইন্ডস্ক্রিন ও হেডলাইট
+        ctx.fillStyle = '#111';
+        ctx.fillRect(-playerCar.width / 2 + 8, -playerCar.height / 2 + 15, playerCar.width - 16, 20);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(-playerCar.width / 2 + 6, -playerCar.height / 2 - 2, 8, 5);
+        ctx.fillRect(playerCar.width / 2 - 14, -playerCar.height / 2 - 2, 8, 5);
         ctx.restore();
     }
 
+    // মূল গেম লুপ
     function loop() {
         update();
         draw();
