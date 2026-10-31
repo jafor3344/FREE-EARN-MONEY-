@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Speed Car Racing - Shorts Edition</title>
+    <title>Gear Speed Car Racing</title>
     <style>
         * {
             box-sizing: border-box;
@@ -21,7 +21,6 @@
             align-items: center;
             height: 100vh;
         }
-        /* ৯:১৬ ভার্টিক্যাল শর্টস ফ্রেম */
         #game-container {
             position: relative;
             width: 100vw;
@@ -57,14 +56,14 @@
         }
         h1 {
             color: #00ffcc;
-            font-size: 30px;
+            font-size: 28px;
             margin-bottom: 10px;
             text-shadow: 0 0 10px rgba(0,255,204,0.6);
         }
         p {
             color: #ddd;
-            font-size: 16px;
-            margin-bottom: 30px;
+            font-size: 15px;
+            margin-bottom: 25px;
             line-height: 1.5;
         }
         .btn {
@@ -77,32 +76,41 @@
             border-radius: 30px;
             cursor: pointer;
             box-shadow: 0 5px 20px rgba(0,255,204,0.4);
-            transition: 0.2s;
         }
-        .btn:active {
-            transform: scale(0.95);
-        }
-        #ui-score {
+        .ui-panel {
             position: absolute;
             top: 15px;
             left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
             color: #fff;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             text-shadow: 2px 2px 4px #000;
             z-index: 5;
+        }
+        .gear-indicator {
+            background: rgba(0,0,0,0.5);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="ui-score">স্কোর: <span id="scoreVal">0</span></div>
+    <div class="ui-panel">
+        <div>স্কোর: <span id="scoreVal">0</span></div>
+        <div class="gear-indicator">গিয়ার: <span id="gearVal">1</span></div>
+    </div>
     <canvas id="gameCanvas"></canvas>
 
     <div id="overlay">
-        <h1>SPEED CAR RACING</h1>
-        <p>স্ক্রিনে আঙুল দিয়ে চেপে ধরুন গাড়ি দ্রুত ছুটবে!<br>অন্য গাড়ি ও বাধা এড়িয়ে সামনে এগিয়ে যান।</p>
+        <h1>GEAR SPEED RACING</h1>
+        <p>আঙুল যেদিকে টানবেন গাড়ি সেদিকে যাবে!<br>স্ক্রিনে চেপে ধরে রাখলে সুপার বুস্ট (জোর) হবে।</p>
         <button class="btn" onclick="startGame()">রেস শুরু করুন</button>
     </div>
 </div>
@@ -114,73 +122,53 @@
     canvas.width = 405;
     canvas.height = 720;
 
-    let gameState = 'START'; // START, PLAYING, GAMEOVER
+    let gameState = 'START'; 
     let score = 0;
-    let roadSpeed = 5;
+    let baseSpeed = 4;
+    let roadSpeed = 4;
     let boostActive = false;
+    let currentGear = 1;
 
-    // প্লেয়ার গাড়ি
     let playerCar = {
         x: canvas.width / 2 - 25,
         y: canvas.height - 130,
         width: 50,
-        height: 90,
-        speed: 4
+        height: 90
     };
 
-    // রাস্তা ও ব্যাকগ্রাউন্ড ল্যান্ডস্কেপ ভ্যারিয়েবল
     let roadOffset = 0;
     let obstacles = [];
-    let scenery = [];
 
-    // ওয়েব অডিও সাউন্ড ইফেক্ট জেনারেটর
-    let audioCtx = null;
-    function playSound(type) {
-        try {
-            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'boost') {
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(350, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'crash') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-            }
-        } catch(e) {}
+    // টাচ বা মাউস ড্র্যাগ কন্ট্রোল (যেদিকে আঙুল দেবেন গাড়ি সেদিকে যাবে)
+    let isDragging = false;
+    function handleMove(clientX) {
+        if (gameState !== 'PLAYING') return;
+        const rect = canvas.getBoundingClientRect();
+        let x = (clientX - rect.left) * (canvas.width / rect.width);
+        playerCar.x = x - playerCar.width / 2;
     }
 
-    // টাচ এবং মাউস কন্ট্রোল (চেপে ধরলে জোর বা স্পিড বাড়বে)
-    window.addEventListener('mousedown', () => { boostActive = true; playSound('boost'); });
-    window.addEventListener('mouseup', () => { boostActive = false; });
+    window.addEventListener('mousedown', () => { boostActive = true; currentGear = 2; document.getElementById('gearVal').innerText = '2 (BOOST)'; });
+    window.addEventListener('mouseup', () => { boostActive = false; currentGear = 1; document.getElementById('gearVal').innerText = '1'; });
 
-    window.addEventListener('touchstart', (e) => { boostActive = true; playSound('boost'); e.preventDefault(); }, { passive: false });
-    window.addEventListener('touchend', () => { boostActive = false; });
+    window.addEventListener('touchstart', (e) => { 
+        boostActive = true; 
+        currentGear = 2; 
+        document.getElementById('gearVal').innerText = '2 (BOOST)';
+        handleMove(e.touches[0].clientX);
+        e.preventDefault(); 
+    }, { passive: false });
 
-    // মাউস বা টাচ দিয়ে ডানে-বামে গাড়ি সরানোর জন্য
-    window.addEventListener('mousemove', (e) => {
-        if (gameState !== 'PLAYING') return;
-        const rect = canvas.getBoundingClientRect();
-        let mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
-        playerCar.x = mouseX - playerCar.width / 2;
+    window.addEventListener('touchend', () => { 
+        boostActive = false; 
+        currentGear = 1; 
+        document.getElementById('gearVal').innerText = '1'; 
     });
 
-    window.addEventListener('touchmove', (e) => {
-        if (gameState !== 'PLAYING') return;
-        const rect = canvas.getBoundingClientRect();
-        let touchX = (e.touches[0].clientX - rect.left) * (canvas.width / rect.width);
-        playerCar.x = touchX - playerCar.width / 2;
-        e.preventDefault();
+    window.addEventListener('mousemove', (e) => { handleMove(e.clientX); });
+    window.addEventListener('touchmove', (e) => { 
+        handleMove(e.touches[0].clientX); 
+        e.preventDefault(); 
     }, { passive: false });
 
     function startGame() {
@@ -193,7 +181,6 @@
 
     function gameOver() {
         gameState = 'GAMEOVER';
-        playSound('crash');
         document.getElementById('overlay').innerHTML = `
             <h1 style="color: #ff3333;">দুর্ঘটনা! গেম ওভার</h1>
             <p>আপনার মোট স্কোর: ${Math.floor(score)}</p>
@@ -205,17 +192,17 @@
     function update() {
         if (gameState !== 'PLAYING') return;
 
-        // স্পিড এবং বুস্ট লজিক (চেপে ধরলে স্পিড দ্বিগুণ হবে)
-        let currentSpeed = boostActive ? roadSpeed * 2.2 : roadSpeed;
-        roadOffset += currentSpeed;
-        score += currentSpeed * 0.1;
+        // গিয়ার ও বুস্ট অনুযায়ী স্পিড নির্ধারণ (চেপে ধরলে জোর বা স্পিড বেড়ে যাবে)
+        roadSpeed = boostActive ? baseSpeed * 2.5 : baseSpeed;
+        roadOffset += roadSpeed;
+        score += roadSpeed * 0.1;
         document.getElementById('scoreVal').innerText = Math.floor(score);
 
-        // রাস্তার সীমানার মধ্যে প্লেয়ার গাড়ি রাখা
+        // রাস্তার সীমানার মধ্যে রাখা
         if (playerCar.x < 55) playerCar.x = 55;
         if (playerCar.x > canvas.width - 55 - player.width) playerCar.x = canvas.width - 55 - player.width;
 
-        // বাধা বা অন্য গাড়ি তৈরি করা
+        // বাধা বা বিপক্ষ গাড়ি তৈরি
         if (Math.random() < 0.03) {
             let laneX = [80, 175, 270][Math.floor(Math.random() * 3)];
             obstacles.push({
@@ -229,9 +216,8 @@
 
         // বাধা আপডেট ও কলিশন চেক
         for (let i = obstacles.length - 1; i >= 0; i--) {
-            obstacles[i].y += currentSpeed * 0.8;
+            obstacles[i].y += roadSpeed * 0.8;
 
-            // কলিশন (ধাক্কা লাগলে গেম ওভার)
             if (
                 playerCar.x < obstacles[i].x + obstacles[i].width &&
                 playerCar.x + playerCar.width > obstacles[i].x &&
@@ -241,31 +227,29 @@
                 gameOver();
             }
 
-            // স্ক্রিনের বাইরে চলে গেলে রিমুভ করা
             if (obstacles[i].y > canvas.height) {
                 obstacles.splice(i, 1);
             }
         }
     }
 
-    // গ্রাফিক্স ড্র করা
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // গ্রিন ব্যাকগ্রাউন্ড (ঘাস)
+        // ঘাস ব্যাকগ্রাউন্ড
         ctx.fillStyle = '#1e7e34';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // মূল পিচ ঢালাই রাস্তা
+        // রাস্তা
         ctx.fillStyle = '#333';
         ctx.fillRect(50, 0, canvas.width - 100, canvas.height);
 
-        // রাস্তার দুইপাশের সাদা বর্ডার লাইন
+        // বর্ডার
         ctx.fillStyle = '#fff';
         ctx.fillRect(45, 0, 8, canvas.height);
         ctx.fillRect(canvas.width - 53, 0, 8, canvas.height);
 
-        // রাস্তার মাঝের ডিভাইডার লাইন (মুভিং ইফেক্ট)
+        // ডিভাইডার লাইন
         ctx.strokeStyle = '#f1c40f';
         ctx.lineWidth = 6;
         ctx.setLineDash([30, 30]);
@@ -274,26 +258,23 @@
         ctx.moveTo(canvas.width / 2, 0);
         ctx.lineTo(canvas.width / 2, canvas.height);
         ctx.stroke();
-        ctx.setLineDash([]); // রিসেট
+        ctx.setLineDash([]);
 
-        // বাধা বা বিপক্ষ গাড়িগুলো ড্র করা
+        // বাধা গাড়িগুলো ড্র
         for (let obs of obstacles) {
             ctx.fillStyle = obs.color;
             ctx.beginPath();
             ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
             ctx.fill();
 
-            // উইন্ডস্ক্রিন ও লাইট
             ctx.fillStyle = '#111';
             ctx.fillRect(obs.x + 8, obs.y + 15, obs.width - 16, 20);
-            ctx.fillRect(obs.x + 8, obs.y + 60, obs.width - 16, 15);
         }
 
-        // প্লেয়ার গাড়ি ড্র করা (সুন্দর ডিজাইন)
+        // প্লেয়ার গাড়ি ড্র
         ctx.save();
         ctx.translate(playerCar.x + playerCar.width / 2, playerCar.y + playerCar.height / 2);
         if (boostActive) {
-            // বুস্ট দিলে পেছনের ইফেক্ট
             ctx.fillStyle = '#00ffff';
             ctx.fillRect(-15, playerCar.height / 2, 30, 15);
         }
@@ -303,16 +284,11 @@
         ctx.roundRect(-playerCar.width / 2, -playerCar.height / 2, playerCar.width, playerCar.height, 10);
         ctx.fill();
 
-        // উইন্ডস্ক্রিন ও হেডলাইট
         ctx.fillStyle = '#111';
         ctx.fillRect(-playerCar.width / 2 + 8, -playerCar.height / 2 + 15, playerCar.width - 16, 20);
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(-playerCar.width / 2 + 6, -playerCar.height / 2 - 2, 8, 5);
-        ctx.fillRect(playerCar.width / 2 - 14, -playerCar.height / 2 - 2, 8, 5);
         ctx.restore();
     }
 
-    // মূল গেম লুপ
     function loop() {
         update();
         draw();
