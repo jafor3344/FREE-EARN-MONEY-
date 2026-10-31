@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Rifle Shooter & Crowd Runner - Levels 1 to 20</title>
+    <title>3D Crowd Runner & Mob Control</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #0f172a;
+            background: #87ceeb;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
             -webkit-user-select: none;
@@ -29,47 +29,93 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
+            padding: 15px;
             box-sizing: border-box;
         }
-        .hud-row {
+        .top-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             width: 100%;
         }
-        .hud-card {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 2px solid rgba(56, 189, 248, 0.4);
-            padding: 10px 20px;
-            border-radius: 30px;
+        .coin-card {
+            background: rgba(30, 41, 59, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
             color: #fff;
             font-size: 18px;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3);
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: auto;
+        }
+        .coin-icon {
+            width: 24px;
+            height: 24px;
+            background: #facc15;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #78350f;
+            font-size: 14px;
+        }
+        .mob-size-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid rgba(56, 189, 248, 0.4);
+            padding: 8px 24px;
+            border-radius: 16px;
+            color: #fff;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .mob-title {
+            font-size: 11px;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .mob-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .pause-btn {
+            pointer-events: auto;
+            background: rgba(30, 41, 59, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         #boss-health-container {
             position: absolute;
-            top: 80px;
+            top: 90px;
             left: 50%;
             transform: translateX(-50%);
-            width: 320px;
-            background: rgba(0,0,0,0.75);
+            width: 260px;
+            background: rgba(0,0,0,0.7);
             border: 2px solid #ef4444;
-            border-radius: 12px;
-            padding: 8px;
+            border-radius: 8px;
+            padding: 4px;
             display: none;
             text-align: center;
         }
         #boss-health-bar {
             width: 100%;
-            height: 16px;
+            height: 14px;
             background: #ef4444;
-            border-radius: 6px;
+            border-radius: 4px;
             transition: width 0.2s;
         }
         #start-screen, #game-over-screen, #level-win-screen {
@@ -78,7 +124,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, rgba(15,23,42,0.95) 0%, rgba(2,6,23,0.98) 100%);
+            background: radial-gradient(circle, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.99) 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -90,9 +136,9 @@
             padding: 20px;
         }
         h1 {
-            font-size: 2.8rem;
+            font-size: 2.6rem;
             margin-bottom: 10px;
-            background: linear-gradient(45deg, #38bdf8, #ec4899);
+            background: linear-gradient(45deg, #38bdf8, #facc15);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -100,8 +146,8 @@
             font-size: 1.1rem;
             margin-bottom: 25px;
             color: #94a3b8;
-            max-width: 600px;
-            line-height: 1.6;
+            max-width: 500px;
+            line-height: 1.5;
         }
         .btn {
             background: linear-gradient(135deg, #0ea5e9, #2563eb);
@@ -113,11 +159,7 @@
             border-radius: 50px;
             cursor: pointer;
             box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4);
-            transition: transform 0.2s;
             pointer-events: auto;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
         }
         #game-over-screen, #level-win-screen {
             display: none;
@@ -132,53 +174,60 @@
     <div id="canvas-container"></div>
 
     <div id="ui">
-        <div class="hud-row">
-            <div class="hud-card" id="level-display">Level: 1 / 20</div>
-            <div class="hud-card">MOB SIZE: <span id="mob-size">44</span></div>
-            <div class="hud-card">Time / Boss: <span id="time-left">30</span>s</div>
+        <div class="top-row">
+            <div class="coin-card">
+                <div class="coin-icon">🪙</div>
+                <span id="coin-count">0</span>
+            </div>
+            <div class="mob-size-card">
+                <div class="mob-title">MOB SIZE</div>
+                <div class="mob-value" id="mob-size">44</div>
+            </div>
+            <button class="pause-btn" id="pause-btn">⏸</button>
         </div>
         <div id="boss-health-container">
-            <div style="font-size: 13px; color: #ffbcbc; margin-bottom: 4px; font-weight: bold;">GIANT BOSS HEALTH: <span id="boss-hp-text">150</span></div>
+            <div style="font-size: 11px; color: #ffbcbc; margin-bottom: 2px; font-weight: bold;">GIANT BOSS HEALTH: <span id="boss-hp-text">150</span></div>
             <div id="boss-health-bar"></div>
         </div>
     </div>
 
     <div id="start-screen">
-        <h1>3D Rifle Shooter & Crowd Runner</h1>
-        <p>দীর্ঘ রাস্তা, আক্রমণাত্মক এনিমি এবং বাধা পেরিয়ে ৩০ সেকেন্ড পর মুখোমুখি হন বিশাল জায়ান্ট বসের সাথে। লেভেল ১ থেকে ২০ পর্যন্ত কঠিন থেকে কঠিনতর চ্যালেঞ্জ মোকাবেলা করুন!<br>Use Arrow Keys or Touch Drag to Move</p>
+        <h1>3D Crowd Runner</h1>
+        <p>ছবির মতো বামে আপগ্রেড স্টেপ (+1), ডানে কয়েন সিলিন্ডার (70), সামনে মাল্টিপ্লায়ার গেট (x3) এবং ৩০ সেকেন্ড পর বিশাল জায়ান্ট বস! লেভেল ১ থেকে ২০ পর্যন্ত খেলুন।</p>
         <button class="btn" id="start-btn">PLAY GAME</button>
     </div>
 
     <div id="level-win-screen">
         <h1>VICTORY!</h1>
-        <p>বিশাল দৈত্য বসকে পরাজিত করা হয়েছে! পরবর্তী লেভেলের জন্য প্রস্তুত হন।</p>
+        <p>বিশাল দৈত্য বসকে পরাজিত করা হয়েছে!</p>
         <button class="btn" id="next-level-btn">NEXT LEVEL</button>
     </div>
 
     <div id="game-over-screen">
         <h1>GAME OVER</h1>
-        <p>এনিমিরা আপনাকে আক্রমণ করে হারিয়ে দিয়েছে! আবার চেষ্টা করুন।</p>
+        <p>এনিমিরা আপনার মব দল শেষ করে দিয়েছে!</p>
         <button class="btn" id="restart-btn">TRY AGAIN</button>
     </div>
 
     <script>
         let scene, camera, renderer;
-        let player, shooterGroup;
+        let crowdGroup;
         let roadSegments = [];
-        let bullets = [];
         let enemies = [];
-        let obstacles = [];
         let gates = [];
+        let coins = [];
+        let upgrades = [];
         let boss = null;
 
         let currentLevel = 1;
         let maxLevels = 20;
         let gameRunning = false;
         let mobSize = 44;
+        let coinCount = 0;
         let playerX = 0;
         let targetX = 0;
         
-        let levelTimer = 30; // 30 Seconds per level before boss
+        let levelTimer = 30;
         let levelTimeElapsed = 0;
         let timerInterval = null;
         let inBossFight = false;
@@ -190,8 +239,8 @@
 
         function playSound(type) {
             try {
-                if (type === 'shoot') synth.triggerAttackRelease("C5", "32n");
-                else if (type === 'gate') synth.triggerAttackRelease("G5", "16n");
+                if (type === 'coin') synth.triggerAttackRelease("A5", "32n");
+                else if (type === 'gate') synth.triggerAttackRelease("C5", "16n");
                 else if (type === 'hit') metalSynth.triggerAttackRelease("C2", "8n");
                 else if (type === 'win') synth.triggerAttackRelease("E6", "8n");
             } catch(e) {}
@@ -205,7 +254,7 @@
             scene.fog = new THREE.FogExp2(0x87ceeb, 0.012);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 4, 7);
+            camera.position.set(0, 5, 8);
             camera.lookAt(0, 1, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -214,21 +263,21 @@
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
             scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(10, 30, 10);
             scene.add(dirLight);
 
             createRoad();
-            createShooterCharacter();
             setupControls();
 
             window.addEventListener('resize', onWindowResize);
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('next-level-btn').addEventListener('click', startNextLevel);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
+            document.getElementById('pause-btn').addEventListener('click', () => { gameRunning = !gameRunning; });
 
             animate();
         }
@@ -236,21 +285,21 @@
         function createRoad() {
             const roadWidth = 10;
             const segmentLength = 50;
-            const roadMat = new THREE.MeshLambertMaterial({ color: 0xf1f5f9 });
+            const roadMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
             const borderMat = new THREE.MeshLambertMaterial({ color: 0x3b82f6 });
 
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 12; i++) {
                 const group = new THREE.Group();
                 const roadMesh = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, segmentLength), roadMat);
                 roadMesh.rotation.x = -Math.PI / 2;
                 group.add(roadMesh);
 
-                const leftBorder = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, segmentLength), borderMat);
-                leftBorder.position.set(-roadWidth/2, 0.25, 0);
+                const leftBorder = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, segmentLength), borderMat);
+                leftBorder.position.set(-roadWidth/2, 0.3, 0);
                 group.add(leftBorder);
 
-                const rightBorder = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, segmentLength), borderMat);
-                rightBorder.position.set(roadWidth/2, 0.25, 0);
+                const rightBorder = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, segmentLength), borderMat);
+                rightBorder.position.set(roadWidth/2, 0.3, 0);
                 group.add(rightBorder);
 
                 group.position.z = -i * segmentLength + 10;
@@ -259,34 +308,11 @@
             }
         }
 
-        function createShooterCharacter() {
-            shooterGroup = new THREE.Group();
-
-            const bodyMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.4), bodyMat);
-            body.position.y = 0.8;
-            shooterGroup.add(body);
-
-            const headMat = new THREE.MeshLambertMaterial({ color: 0xffdbac });
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), headMat);
-            head.position.y = 1.4;
-            shooterGroup.add(head);
-
-            const gunMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
-            const gun = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 1.0), gunMat);
-            gun.position.set(0.2, 0.9, -0.5);
-            shooterGroup.add(gun);
-
-            shooterGroup.position.set(0, 0, 0);
-            scene.add(shooterGroup);
-            player = shooterGroup;
-        }
-
         function setupControls() {
             window.addEventListener('keydown', (e) => {
                 if (!gameRunning) return;
-                if ((e.key === 'ArrowLeft' || e.key === 'a') && targetX > -3.5) targetX -= 1.2;
-                if ((e.key === 'ArrowRight' || e.key === 'd') && targetX < 3.5) targetX += 1.2;
+                if ((e.key === 'ArrowLeft' || e.key === 'a') && targetX > -3.8) targetX -= 1.0;
+                if ((e.key === 'ArrowRight' || e.key === 'd') && targetX < 3.8) targetX += 1.0;
             });
 
             let touchX = 0;
@@ -294,110 +320,116 @@
             window.addEventListener('touchmove', (e) => {
                 if (!gameRunning) return;
                 let diff = e.touches[0].clientX - touchX;
-                if (diff > 20 && targetX < 3.5) { targetX += 1.2; touchX = e.touches[0].clientX; }
-                else if (diff < -20 && targetX > -3.5) { targetX -= 1.2; touchX = e.touches[0].clientX; }
+                if (diff > 15 && targetX < 3.8) { targetX += 1.0; touchX = e.touches[0].clientX; }
+                else if (diff < -15 && targetX > -3.8) { targetX -= 1.0; touchX = e.touches[0].clientX; }
             });
         }
 
         function spawnLevelElements() {
             enemies.forEach(e => scene.remove(e.mesh));
-            obstacles.forEach(o => scene.remove(o.mesh));
             gates.forEach(g => scene.remove(g.mesh));
+            coins.forEach(c => scene.remove(c.mesh));
+            upgrades.forEach(u => scene.remove(u.mesh));
             enemies = [];
-            obstacles = [];
             gates = [];
+            coins = [];
+            upgrades = [];
             if (boss) { scene.remove(boss); boss = null; }
 
             inBossFight = false;
             levelTimeElapsed = 0;
             document.getElementById('boss-health-container').style.display = 'none';
-            document.getElementById('time-left').innerText = levelTimer;
+            document.getElementById('time-left')?.remove(); // clean up if any
 
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 if (!gameRunning || inBossFight) return;
                 levelTimeElapsed++;
-                let remaining = levelTimer - levelTimeElapsed;
-                document.getElementById('time-left').innerText = Math.max(0, remaining);
-                if (remaining <= 0) {
+                if (levelTimeElapsed >= levelTimer) {
                     clearInterval(timerInterval);
                     spawnBoss();
                 }
             }, 1000);
 
-            // Spawning Gates, Obstacles & Aggressive Enemies based on Level difficulty (1 to 20)
-            let itemCount = 5 + currentLevel;
-            for (let i = 1; i <= itemCount; i++) {
-                let zPos = -i * 180;
-                
-                // Multiplier Gate
-                let laneX = (Math.random() > 0.5 ? 1 : -1) * 2;
-                let multTypes = ['x2', 'x3', '+10'];
-                let type = multTypes[Math.floor(Math.random() * multTypes.length)];
-                let gateGroup = createGateMesh(type);
-                gateGroup.position.set(laneX, 0, zPos);
+            let count = 5 + currentLevel;
+            for (let i = 1; i <= count; i++) {
+                let zPos = -i * 200;
+
+                // Left Side Upgrades (+1 blue stairs matching image)
+                let upGroup = createUpgradeMesh();
+                upGroup.position.set(-3.5, 0, zPos);
+                scene.add(upGroup);
+                upgrades.push({ mesh: upGroup, z: zPos, passed: false });
+
+                // Center Multiplier Gates (x3, x2)
+                let gateType = Math.random() > 0.5 ? 'x3' : 'x2';
+                let gateGroup = createGateMesh(gateType);
+                gateGroup.position.set(0, 0, zPos - 60);
                 scene.add(gateGroup);
-                gates.push({ mesh: gateGroup, type: type, z: zPos, passed: false });
+                gates.push({ mesh: gateGroup, type: gateType, z: zPos - 60, passed: false });
 
-                // Road Obstacles (Barriers blocking the road)
-                if (i % 2 === 0) {
-                    let obsMesh = createObstacleMesh();
-                    let obsX = (Math.random() - 0.5) * 6;
-                    obsMesh.position.set(obsX, 0.5, zPos - 40);
-                    scene.add(obsMesh);
-                    obstacles.push({ mesh: obsMesh, z: zPos - 40, x: obsX });
-                }
+                // Right Side Coin Cylinder (matching image 70 coins container)
+                let coinGroup = createCoinCylinderMesh();
+                coinGroup.position.set(3.5, 0, zPos - 30);
+                scene.add(coinGroup);
+                coins.push({ mesh: coinGroup, z: zPos - 30, collected: false });
 
-                // Aggressive Enimies blocking and moving towards player
-                let enemyCount = 2 + Math.floor(currentLevel / 2);
-                for (let j = 0; j < enemyCount; j++) {
-                    let ex = (Math.random() - 0.5) * 8;
-                    let ez = zPos - 80 - (j * 20);
-                    let enemyMesh = createEnemyMesh();
-                    enemyMesh.position.set(ex, 0.6, ez);
-                    scene.add(enemyMesh);
-                    // Store lateral speed to make them actively track/move towards the player
-                    let trackSpeed = 0.01 + (currentLevel * 0.002);
-                    enemies.push({ mesh: enemyMesh, z: ez, x: ex, trackSpeed: trackSpeed, active: true });
-                }
+                // Red Enemy Swarm
+                let enemyMesh = createEnemySwarmMesh();
+                enemyMesh.position.set(0, 0.6, zPos - 120);
+                scene.add(enemyMesh);
+                enemies.push({ mesh: enemyMesh, z: zPos - 120, active: true });
             }
+        }
+
+        function createUpgradeMesh() {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshLambertMaterial({ color: 0x3b82f6 });
+            for(let j=0; j<4; j++) {
+                let step = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 1.2), mat);
+                step.position.set(0, j * 0.3, j * 1.0);
+                group.add(step);
+            }
+            return group;
         }
 
         function createGateMesh(type) {
             const group = new THREE.Group();
-            const mat = new THREE.MeshLambertMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.8 });
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3, 0.2), mat);
-            frame.position.y = 1.5;
+            const mat = new THREE.MeshLambertMaterial({ color: 0x2563eb, transparent: true, opacity: 0.85 });
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(4.0, 3.2, 0.25), mat);
+            frame.position.y = 1.6;
             group.add(frame);
             return group;
         }
 
-        function createObstacleMesh() {
-            const mat = new THREE.MeshLambertMaterial({ color: 0x64748b });
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.0, 0.8), mat);
-            return mesh;
+        function createCoinCylinderMesh() {
+            const group = new THREE.Group();
+            const glassMat = new THREE.MeshLambertMaterial({ color: 0xfacc15, transparent: true, opacity: 0.4 });
+            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 6, 16), glassMat);
+            cylinder.position.y = 3;
+            group.add(cylinder);
+            return group;
         }
 
-        function createEnemyMesh() {
+        function createEnemySwarmMesh() {
             const mat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.2, 0.5), mat);
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.2, 2.5), mat);
             return mesh;
         }
 
         function spawnBoss() {
             inBossFight = true;
-            bossMaxHealth = 100 + (currentLevel * 35);
+            bossMaxHealth = 150 + (currentLevel * 30);
             bossHealth = bossMaxHealth;
 
             const bossMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
-            boss = new THREE.Mesh(new THREE.BoxGeometry(3.0, 3.4, 1.8), bossMat);
-            boss.position.set(0, 1.7, -90);
+            boss = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.5, 2.0), bossMat);
+            boss.position.set(0, 1.75, -90);
             scene.add(boss);
 
             document.getElementById('boss-health-container').style.display = 'block';
             document.getElementById('boss-hp-text').innerText = bossHealth;
             document.getElementById('boss-health-bar').style.width = '100%';
-            document.getElementById('time-left').innerText = "BOSS!";
         }
 
         function startGame() {
@@ -405,12 +437,12 @@
             document.getElementById('start-screen').style.display = 'none';
             gameRunning = true;
             mobSize = 44;
+            coinCount = 0;
             currentLevel = 1;
             loadLevel();
         }
 
         function loadLevel() {
-            document.getElementById('level-display').innerText = `Level: ${currentLevel} / ${maxLevels}`;
             spawnLevelElements();
         }
 
@@ -418,7 +450,7 @@
             document.getElementById('level-win-screen').style.display = 'none';
             currentLevel++;
             if (currentLevel > maxLevels) {
-                alert("অভিনন্দন! আপনি সফলভাবে ২০টি লেভেল সম্পন্ন করেছেন!");
+                alert("অভিনন্দন! আপনি ২০টি লেভেল সম্পন্ন করেছেন!");
                 currentLevel = 1;
             }
             gameRunning = true;
@@ -432,121 +464,80 @@
             loadLevel();
         }
 
-        let shootTimer = 0;
-        function fireBullet() {
-            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-            let count = Math.min(14, Math.floor(mobSize / 5));
-            for (let i = 0; i < count; i++) {
-                let offset = (i - count/2) * 0.25;
-                const bullet = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6), bulletMat);
-                bullet.rotation.x = Math.PI / 2;
-                bullet.position.set(player.position.x + offset, 0.9, player.position.y - 0.5);
-                scene.add(bullet);
-                bullets.push(bullet);
-            }
-            playSound('shoot');
-        }
-
         function updateGame() {
             if (!gameRunning) return;
 
             playerX += (targetX - playerX) * 0.2;
-            player.position.x = playerX;
-
-            shootTimer++;
-            if (shootTimer % 22 === 0) {
-                fireBullet();
-            }
 
             roadSegments.forEach(seg => {
-                seg.position.z += 0.6;
-                if (seg.position.z > 60) seg.position.z -= 400;
+                seg.position.z += 0.65;
+                if (seg.position.z > 60) seg.position.z -= 600;
             });
 
-            // Update Bullets
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                bullets[i].position.z -= 1.3;
-
-                // Boss Collision
-                if (inBossFight && boss && Math.abs(bullets[i].position.z - boss.position.z) < 2 && Math.abs(bullets[i].position.x - boss.position.x) < 1.8) {
-                    bossHealth -= 2;
-                    let pct = Math.max(0, (bossHealth / bossMaxHealth) * 100);
-                    document.getElementById('boss-health-bar').style.width = pct + '%';
-                    document.getElementById('boss-hp-text').innerText = Math.max(0, bossHealth);
-                    scene.remove(bullets[i]);
-                    bullets.splice(i, 1);
-
-                    if (bossHealth <= 0) {
-                        scene.remove(boss);
-                        boss = null;
-                        if (timerInterval) clearInterval(timerInterval);
-                        document.getElementById('boss-health-container').style.display = 'none';
-                        gameRunning = false;
-                        playSound('win');
-                        document.getElementById('level-win-screen').style.display = 'flex';
-                    }
-                    continue;
+            // Update Upgrades
+            upgrades.forEach(u => {
+                u.mesh.position.z += 0.65;
+                if (!u.passed && u.mesh.position.z > -2 && u.mesh.position.z < 2 && Math.abs(playerX - u.mesh.position.x) < 2.0) {
+                    u.passed = true;
+                    mobSize += 5;
+                    playSound('gate');
                 }
-
-                // Enemy Bullet Collision
-                let bulletRemoved = false;
-                for (let j = enemies.length - 1; j >= 0; j--) {
-                    if (enemies[j].active && Math.abs(bullets[i].position.z - enemies[j].mesh.position.z) < 1.5 && Math.abs(bullets[i].position.x - enemies[j].mesh.position.x) < 1.0) {
-                        scene.remove(enemies[j].mesh);
-                        enemies.splice(j, 1);
-                        scene.remove(bullets[i]);
-                        bullets.splice(i, 1);
-                        mobSize += 1;
-                        bulletRemoved = true;
-                        break;
-                    }
-                }
-                if (bulletRemoved) continue;
-
-                if (bullets[i] && bullets[i].position.z < -300) {
-                    scene.remove(bullets[i]);
-                    bullets.splice(i, 1);
-                }
-            }
+            });
 
             // Update Gates
             gates.forEach(g => {
-                g.mesh.position.z += 0.6;
-                if (!g.passed && Math.abs(g.mesh.position.z - player.position.z) < 1.5 && Math.abs(g.mesh.position.x - player.position.x) < 2.0) {
+                g.mesh.position.z += 0.65;
+                if (!g.passed && g.mesh.position.z > -2 && g.mesh.position.z < 2 && Math.abs(playerX - g.mesh.position.x) < 2.5) {
                     g.passed = true;
+                    if (g.type === 'x3') mobSize *= 3;
+                    else mobSize *= 2;
                     playSound('gate');
-                    if (g.type === 'x2') mobSize *= 2;
-                    else if (g.type === 'x3') mobSize *= 3;
-                    else mobSize += 10;
                 }
             });
 
-            // Update Obstacles
-            obstacles.forEach(o => {
-                o.mesh.position.z += 0.6;
-                if (Math.abs(o.mesh.position.z - player.position.z) < 1.0 && Math.abs(o.mesh.position.x - player.position.x) < 1.2) {
-                    gameOver();
+            // Update Coins
+            coins.forEach(c => {
+                c.mesh.position.z += 0.65;
+                if (!c.collected && c.mesh.position.z > -2 && c.mesh.position.z < 2 && Math.abs(playerX - c.mesh.position.x) < 2.0) {
+                    c.collected = true;
+                    coinCount += 70;
+                    playSound('coin');
                 }
             });
 
-            // Update Enemies (Aggressive tracking towards player & advancing)
-            enemies.forEach(e => {
-                e.mesh.position.z += 0.75;
-                
-                // Active tracking movement towards player's X position to block and attack
-                if (e.mesh.position.x < player.position.x) {
-                    e.mesh.position.x += e.trackSpeed;
-                } else {
-                    e.mesh.position.x -= e.trackSpeed;
-                }
+            // Update Enemies & Boss
+            if (inBossFight && boss) {
+                boss.position.z += 0.65;
+                bossHealth -= Math.max(1, Math.floor(mobSize / 10));
+                let pct = Math.max(0, (bossHealth / bossMaxHealth) * 100);
+                document.getElementById('boss-health-bar').style.width = pct + '%';
+                document.getElementById('boss-hp-text').innerText = Math.max(0, bossHealth);
 
-                // Collision with player
-                if (Math.abs(e.mesh.position.z - player.position.z) < 1.0 && Math.abs(e.mesh.position.x - player.position.x) < 1.0) {
-                    gameOver();
+                if (bossHealth <= 0) {
+                    scene.remove(boss);
+                    boss = null;
+                    if (timerInterval) clearInterval(timerInterval);
+                    document.getElementById('boss-health-container').style.display = 'none';
+                    gameRunning = false;
+                    playSound('win');
+                    document.getElementById('level-win-screen').style.display = 'flex';
                 }
-            });
+            } else {
+                enemies.forEach(e => {
+                    e.mesh.position.z += 0.65;
+                    if (e.mesh.position.z > -3 && e.mesh.position.z < 2) {
+                        mobSize -= 15;
+                        playSound('hit');
+                        e.mesh.position.z = -1000; // remove after clash
+                        if (mobSize <= 0) {
+                            gameOver();
+                        }
+                    }
+                });
+            }
 
-            document.getElementById('mob-size').innerText = mobSize;
+            document.getElementById('mob-size').innerText = Math.max(0, mobSize);
+            document.getElementById('coin-count').innerText = coinCount;
         }
 
         function gameOver() {
