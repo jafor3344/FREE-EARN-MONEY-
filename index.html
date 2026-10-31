@@ -1,363 +1,351 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Color Runner Boss Fight</title>
+    <title>Maze Dash - Cute Cat Edition</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #1a1a1a;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        * {
+            box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
         }
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-            pointer-events: none;
-            text-align: center;
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-        #level-indicator {
-            font-size: 18px;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-bottom: 5px;
+        /* ইউটিউব শর্টসের জন্য নিখুঁত ৯:১৬ ফ্রেম এবং ছবির মতো ব্যাকগ্রাউন্ড */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 405px;
+            max-height: 720px;
+            background: #e6953b;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            overflow: hidden;
+            border: 4px solid #b86b20;
+            border-radius: 12px;
         }
-        #instructions {
-            position: absolute;
-            bottom: 40px;
+        canvas {
+            display: block;
             width: 100%;
-            text-align: center;
-            color: white;
-            font-size: 18px;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            pointer-events: none;
-            animation: pulse 1.5s infinite;
+            height: 100%;
+            touch-action: none;
         }
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #ffcc00;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255,204,0,0.5);
+        }
+        p {
+            color: #eee;
+            font-size: 15px;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+        .btn {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
         }
     </style>
-    <!-- Three.js Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="ui">
-        <div id="level-indicator">Level 1</div>
-        <div id="score">Score: 0</div>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="overlay">
+        <h1>MAZE ESCAPE</h1>
+        <p>স্ক্রিনে আঙুল দিয়ে বিড়ালটি টেনে নিন[span_2](start_span)[span_2](end_span)!<br>করাত ও বাধা এড়িয়ে ফিনিশ লাইনে পৌঁছান[span_3](start_span)[span_3](end_span)。</p>
+        <button class="btn" onclick="startGame()">প্লে করুন</button>
     </div>
-    <div id="instructions">আঙুল দিয়ে টেনে ডানে-বামে নিন এবং একই রঙের স্টিকম্যান ধরুন!</div>
+</div>
 
-    <script>
-        // Game Variables
-        let scene, camera, renderer;
-        let player;
-        let trackLength = 400;
-        let gameSpeed = 0.3;
-        let isRunning = false;
-        let playerLevel = 1;
-        let playerColor = 0x3498db; // Blue
-        let score = 0;
-        
-        let collectibles = [];
-        let obstacles = [];
-        let boss = null;
-        let gameState = 'RUNNING'; // RUNNING, BOSS_FIGHT, WON, LOST
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-        // Touch/Mouse Controls
-        let touchX = 0;
-        let targetX = 0;
-        let isDragging = false;
-        let previousMouseX = 0;
+    canvas.width = 405;
+    canvas.height = 720;
 
-        init();
-        animate();
+    let gameState = 'START'; 
 
-        function init() {
-            // Scene Setup
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
+    // প্লেয়ার (ছবির স্টাইলে বক্সের ভেতর ইউনিক কিউট বিড়াল)
+    let player = {
+        x: 350,
+        y: 130,
+        size: 38,
+        isDragging: false
+    };
 
-            // Camera Setup
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 7, -10);
-            camera.lookAt(0, 2, 5);
+    // ছবির সাথে হুবহু মিল রেখে পাথরের ব্লক ও দেওয়ালসমূহ[span_4](start_span)[span_4](end_span)
+    let walls = [
+        { x: 0, y: 0, w: 405, h: 40 },
+        { x: 0, y: 220, w: 280, h: 40 },
+        { x: 120, y: 400, w: 285, h: 40 },
+        { x: 0, y: 560, w: 220, h: 40 },
+        { x: 120, y: 220, w: 40, h: 380 },
+        { x: 280, y: 400, w: 40, h: 320 }
+    ];
 
-            // Renderer Setup
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            document.body.appendChild(renderer.domElement);
+    // ছবির মতো বড় বড় ঘূর্ণমান করাত বাধা (Saw Blades)[span_5](start_span)[span_5](end_span)
+    let hazards = [
+        { x: 100, y: 130, radius: 28, angle: 0, speed: 0.1 },
+        { x: 220, y: 130, radius: 28, angle: 0, speed: -0.12 }
+    ];
 
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
+    // ফিনিশিং লাইন (শেষ গোল্ডেন পয়েন্ট)
+    let finishLine = {
+        x: 40,
+        y: 640,
+        width: 60,
+        height: 50
+    };
 
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(20, 40, -20);
-            directionalLight.castShadow = true;
-            scene.add(directionalLight);
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
 
-            // Create Track
-            createTrack();
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mousemove', dragMove);
+    canvas.addEventListener('mouseup', endDrag);
 
-            // Create Player
-            player = createStickman(playerColor);
-            player.position.set(0, 0, 0);
-            scene.add(player);
+    canvas.addEventListener('touchstart', (e) => { startDrag(e); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => { dragMove(e); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchend', endDrag);
 
-            // Generate Level Objects
-            generateCollectiblesAndObstacles();
-            createBoss();
-
-            // Event Listeners for Smooth Dragging
-            window.addEventListener('resize', onWindowResize);
-            
-            document.addEventListener('mousedown', onPointerDown);
-            document.addEventListener('mousemove', onPointerMove);
-            document.addEventListener('mouseup', onPointerUp);
-
-            document.addEventListener('touchstart', onPointerDown, { passive: false });
-            document.addEventListener('touchmove', onPointerMove, { passive: false });
-            document.addEventListener('touchend', onPointerUp);
+    function startDrag(e) {
+        if (gameState !== 'PLAYING') return;
+        const pos = getPos(e);
+        if (
+            pos.x > player.x - player.size/2 - 10 &&
+            pos.x < player.x + player.size/2 + 10 &&
+            pos.y > player.y - player.size/2 - 10 &&
+            pos.y < player.y + player.size/2 + 10
+        ) {
+            player.isDragging = true;
         }
+    }
 
-        function createTrack() {
-            // Water background plane
-            const waterGeo = new THREE.PlaneGeometry(1000, 1000);
-            const waterMat = new THREE.MeshBasicMaterial({ color: 0x1e90ff });
-            const water = new THREE.Mesh(waterGeo, waterMat);
-            water.rotation.x = -Math.PI / 2;
-            water.position.y = -0.5;
-            scene.add(water);
+    function dragMove(e) {
+        if (!player.isDragging || gameState !== 'PLAYING') return;
+        const pos = getPos(e);
+        player.x = pos.x;
+        player.y = pos.y;
 
-            // Main Running Path
-            const trackGeo = new THREE.BoxGeometry(6, 0.5, trackLength);
-            const trackMat = new THREE.MeshStandardMaterial({ color: 0x3d3d3d, roughness: 0.8 });
-            const track = new THREE.Mesh(trackGeo, trackMat);
-            track.position.set(0, -0.25, trackLength / 2);
-            track.receiveShadow = true;
-            scene.add(track);
+        // বর্ডারের ভেতরে রাখা
+        let half = player.size / 2;
+        if (player.x < half) player.x = half;
+        if (player.x > canvas.width - half) player.x = canvas.width - half;
+        if (player.y < half) player.y = half;
+        if (player.y > canvas.height - half) player.y = canvas.height - half;
+    }
 
-            // Side rails
-            const railGeo = new THREE.BoxGeometry(0.3, 1, trackLength);
-            const railMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
-            
-            const leftRail = new THREE.Mesh(railGeo, railMat);
-            leftRail.position.set(-3.15, 0.25, trackLength / 2);
-            scene.add(leftRail);
+    function endDrag() {
+        player.isDragging = false;
+    }
 
-            const rightRail = new THREE.Mesh(railGeo, railMat);
-            rightRail.position.set(3.15, 0.25, trackLength / 2);
-            scene.add(rightRail);
-        }
+    function startGame() {
+        gameState = 'PLAYING';
+        player.x = 350;
+        player.y = 130;
+        document.getElementById('overlay').style.display = 'none';
+    }
 
-        function createStickman(color) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4 });
+    function gameOver() {
+        gameState = 'GAMEOVER';
+        document.getElementById('overlay').innerHTML = `
+            <h1 style="color: #ff3333;">আরে না! কাটা পড়েছেন!</h1>
+            <p>আবার চেষ্টা করুন[span_6](start_span)[span_6](end_span)!</p>
+            <button class="btn" onclick="startGame()">পুনরায় চেষ্টা</button>
+        `;
+        document.getElementById('overlay').style.display = 'flex';
+    }
 
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
-            const head = new THREE.Mesh(headGeo, mat);
-            head.position.y = 1.4;
-            head.castShadow = true;
-            group.add(head);
+    function winGame() {
+        gameState = 'WIN';
+        document.getElementById('overlay').innerHTML = `
+            <h1 style="color: #00ffcc;">অভিনন্দন! জয়ী হয়েছেন[span_7](start_span)[span_7](end_span)!</h1>
+            <p>সফলভাবে ফিনিশ লাইনে পৌঁছেছেন[span_8](start_span)[span_8](end_span)。</p>
+            <button class="btn" onclick="startGame()">আবার খেলুন</button>
+        `;
+        document.getElementById('overlay').style.display = 'flex';
+    }
 
-            // Body
-            const bodyGeo = new THREE.CylinderGeometry(0.15, 0.1, 0.8, 8);
-            const body = new THREE.Mesh(bodyGeo, mat);
-            body.position.y = 0.8;
-            body.castShadow = true;
-            group.add(body);
+    function update() {
+        if (gameState !== 'PLAYING') return;
 
-            // Limbs (Simple blocks)
-            const limbGeo = new THREE.BoxGeometry(0.12, 0.7, 0.12);
-            
-            const leftArm = new THREE.Mesh(limbGeo, mat);
-            leftArm.position.set(-0.3, 0.8, 0);
-            group.add(leftArm);
-
-            const rightArm = new THREE.Mesh(limbGeo, mat);
-            rightArm.position.set(0.3, 0.8, 0);
-            group.add(rightArm);
-
-            const leftLeg = new THREE.Mesh(limbGeo, mat);
-            leftLeg.position.set(-0.15, 0.2, 0);
-            group.add(leftLeg);
-
-            const rightLeg = new THREE.Mesh(limbGeo, mat);
-            rightLeg.position.set(0.15, 0.2, 0);
-            group.add(rightLeg);
-
-            group.scale.set(1, 1, 1);
-            return group;
-        }
-
-        function generateCollectiblesAndObstacles() {
-            const colors = [0x3498db, 0xe74c3c, 0x2ecc71]; // Blue, Red, Green
-
-            for (let z = 20; z < trackLength - 40; z += 15) {
-                // Spawn Collectibles (Matching and different colors)
-                for (let i = 0; i < 3; i++) {
-                    const cColor = colors[Math.floor(Math.random() * colors.length)];
-                    const item = createStickman(cColor);
-                    const xPos = (i - 1) * 2;
-                    item.position.set(xPos, 0, z + (Math.random() * 5));
-                    item.userData = { type: 'collectible', color: cColor, collected: false };
-                    scene.add(item);
-                    collectibles.push(item);
-                }
-
-                // Spawn Obstacles
-                if (Math.random() > 0.4) {
-                    const obsGeo = new THREE.BoxGeometry(2, 1, 0.5);
-                    const obsMat = new THREE.MeshStandardMaterial({ color: 0xff4757 });
-                    const obstacle = new THREE.Mesh(obsGeo, obsMat);
-                    const xPos = (Math.random() - 0.5) * 4;
-                    obstacle.position.set(xPos, 0.5, z + 7);
-                    obstacle.castShadow = true;
-                    obstacle.userData = { type: 'obstacle' };
-                    scene.add(obstacle);
-                    obstacles.push(obstacle);
-                }
+        let half = player.size / 2;
+        // দেওয়াল বা ব্লকের সাথে সংঘর্ষ চেক[span_9](start_span)[span_9](end_span)
+        for (let w of walls) {
+            if (
+                player.x + half > w.x &&
+                player.x - half < w.x + w.w &&
+                player.y + half > w.y &&
+                player.y - half < w.y + w.h
+            ) {
+                gameOver();
             }
         }
 
-        function createBoss() {
-            boss = createStickman(0xff4757); // Red Boss
-            boss.scale.set(3.5, 3.5, 3.5);
-            boss.position.set(0, 0, trackLength - 10);
-            scene.add(boss);
-        }
-
-        // Pointer / Touch Handlers for Smooth Movement
-        function onPointerDown(e) {
-            isDragging = true;
-            isRunning = true;
-            previousMouseX = e.clientX || e.touches[0].clientX;
-        }
-
-        function onPointerMove(e) {
-            if (!isDragging || gameState !== 'RUNNING') return;
-
-            const currentX = e.clientX || e.touches[0].clientX;
-            const deltaX = currentX - previousMouseX;
-            previousMouseX = currentX;
-
-            targetX += deltaX * 0.02;
-            // Limit within track bounds
-            targetX = Math.max(-2.5, Math.min(2.5, targetX));
-        }
-
-        function onPointerUp() {
-            isDragging = false;
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // Game Loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            if (isRunning && gameState === 'RUNNING') {
-                // Move player forward
-                player.position.z += gameSpeed;
-
-                // Smoothly interpolate player X position towards targetX
-                player.position.x += (targetX - player.position.x) * 0.1;
-
-                // Follow camera behind player
-                camera.position.z = player.position.z - 10;
-                camera.position.x = player.position.x * 0.5;
-
-                // Collision detection with collectibles
-                collectibles.forEach(item => {
-                    if (!item.userData.collected && player.position.distanceTo(item.position) < 1.2) {
-                        if (item.userData.color === playerColor) {
-                            // Correct color match: Grow bigger!
-                            playerLevel += 1;
-                            score += 10;
-                            const newScale = 1 + (playerLevel - 1) * 0.15;
-                            player.scale.set(newScale, newScale, newScale);
-                            
-                            // Remove item
-                            scene.remove(item);
-                            item.userData.collected = true;
-                        } else {
-                            // Wrong color: Shrink or penalty
-                            playerLevel = Math.max(1, playerLevel - 1);
-                            const newScale = 1 + (playerLevel - 1) * 0.15;
-                            player.scale.set(newScale, newScale, newScale);
-
-                            scene.remove(item);
-                            item.userData.collected = true;
-                        }
-                        document.getElementById('level-indicator').innerText = `Level ${playerLevel}`;
-                        document.getElementById('score').innerText = `Score: ${score}`;
-                    }
-                });
-
-                // Collision with obstacles
-                obstacles.forEach(obs => {
-                    if (player.position.distanceTo(obs.position) < 1.0) {
-                        playerLevel = Math.max(1, playerLevel - 2);
-                        const newScale = 1 + (playerLevel - 1) * 0.15;
-                        player.scale.set(newScale, newScale, newScale);
-                        obs.position.y = -10; // Hide obstacle after hit
-                    }
-                });
-
-                // Check for Boss Fight trigger at the finish line
-                if (player.position.z >= trackLength - 15) {
-                    gameState = 'BOSS_FIGHT';
-                    document.getElementById('instructions').innerText = 'ফাইনাল বস ফাইট শুরু হয়েছে!';
-                }
-            } 
-            else if (gameState === 'BOSS_FIGHT') {
-                // Move player towards boss for fight animation
-                if (player.position.z < trackLength - 4) {
-                    player.position.z += 0.1;
-                    player.position.x += (0 - player.position.x) * 0.1;
-                } else {
-                    // Epic Fight Animation (Rotating / Clashing)
-                    player.rotation.y += 0.2;
-                    boss.rotation.y -= 0.2;
-
-                    setTimeout(() => {
-                        if (playerLevel >= 5) {
-                            gameState = 'WON';
-                            document.getElementById('instructions').innerText = 'অভিনন্দন! আপনি বসকে হারিয়ে জয়ী হয়েছেন! 🏆';
-                            document.getElementById('instructions').style.color = '#2ecc71';
-                        } else {
-                            gameState = 'LOST';
-                            document.getElementById('instructions').innerText = 'গেম ওভার! বসকে হারাতে লেভেল বাড়ান।';
-                            document.getElementById('instructions').style.color = '#e74c3c';
-                        }
-                    }, 2000);
-                    gameState = 'FINISHED';
-                }
+        // ঘূর্ণমান করাতের সাথে ধাক্কা চেক[span_10](start_span)[span_10](end_span)
+        for (let h of hazards) {
+            h.angle += h.speed;
+            const dist = Math.hypot(player.x - h.x, player.y - h.y);
+            if (dist < half + h.radius - 8) {
+                gameOver();
             }
-
-            renderer.render(scene, camera);
         }
-    </script>
+
+        // ফিনিশ লাইন চেক[span_11](start_span)[span_11](end_span)
+        if (
+            player.x > finishLine.x &&
+            player.x < finishLine.x + finishLine.width &&
+            player.y > finishLine.y &&
+            player.y < finishLine.y + finishLine.height
+        ) {
+            winGame();
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // পাথরের টেক্সচারযুক্ত দেওয়াল বা ব্লক[span_12](start_span)[span_12](end_span)
+        ctx.fillStyle = '#3e4a59';
+        for (let w of walls) {
+            ctx.fillRect(w.x, w.y, w.w, w.h);
+            ctx.strokeStyle = '#5a6b82';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(w.x, w.y, w.w, w.h);
+        }
+
+        // ফিনিশ লাইন (গোল্ডেন জোন)[span_13](start_span)[span_13](end_span)
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(finishLine.x, finishLine.y, finishLine.width, finishLine.height);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('FINISH', finishLine.x + finishLine.width / 2, finishLine.y + 30);
+
+        // ঘূর্ণমান করাত বাধা (Saw Blades)[span_14](start_span)[span_14](end_span)
+        for (let h of hazards) {
+            ctx.save();
+            ctx.translate(h.x, h.y);
+            ctx.rotate(h.angle);
+
+            ctx.fillStyle = '#99aab8';
+            ctx.beginPath();
+            ctx.arc(0, 0, h.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // করাতের দাঁতগুলো[span_15](start_span)[span_15](end_span)
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 8; i++) {
+                ctx.rotate(Math.PI / 4);
+                ctx.fillRect(-3, -h.radius - 6, 6, 7);
+            }
+            ctx.restore();
+        }
+
+        // প্লেয়ার: ছবির মতো কাঁচের বাবল ও ইউনিক কিউট বিড়াল ক্যারেক্টার[span_16](start_span)[span_16](end_span)
+        ctx.save();
+        ctx.translate(player.x, player.y);
+
+        // বাবল গ্লো
+        ctx.beginPath();
+        ctx.arc(0, 0, (player.size/2) + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 204, 255, 0.8)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // বিড়ালের ব্যাকগ্রাউন্ড বক্স বা বৃত্ত
+        ctx.fillStyle = '#222';
+        ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-player.size/2, -player.size/2, player.size, player.size);
+
+        // বিড়ালের ফেস ও কান (অন্য কার্টুনের সাথে মিল নেই এমন ইউনিক ডিজাইন)
+        ctx.fillStyle = '#b0bec5'; // গ্রে কালার বিড়াল
+        ctx.beginPath();
+        ctx.arc(0, 2, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // কান দুটি
+        ctx.beginPath();
+        ctx.moveTo(-12, -6);
+        ctx.lineTo(-18, -18);
+        ctx.lineTo(-4, -12);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(12, -6);
+        ctx.lineTo(18, -18);
+        ctx.lineTo(4, -12);
+        ctx.fill();
+
+        // বড় গোল গোল চোখ
+        ctx.fillStyle = '#ffeb3b';
+        ctx.beginPath();
+        ctx.arc(-5, 0, 4.5, 0, Math.PI * 2);
+        ctx.arc(5, 0, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-5, 0, 2, 0, Math.PI * 2);
+        ctx.arc(5, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    loop();
+</script>
+
 </body>
 </html>
