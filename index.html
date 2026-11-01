@@ -616,7 +616,7 @@
             document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
-        function startGame(keepLevel = true) {
+        function startGame() {
             const lvl = parseInt(levelSelect.value);
             const cat = document.getElementById('categorySelect').value;
             
@@ -709,13 +709,12 @@
 
         document.getElementById('startPlayBtn').addEventListener('click', () => {
             audio.init();
-            startGame(true);
+            startGame();
         });
 
-        // Fixed: Restart button uses current level selector value without shifting it unexpectedly
-        document.getElementById('restartBtn').addEventListener('click', () => startGame(true));
-        document.getElementById('categorySelect').addEventListener('change', () => startGame(true));
-        document.getElementById('levelSelect').addEventListener('change', () => startGame(true));
+        document.getElementById('restartBtn').addEventListener('click', () => startGame());
+        document.getElementById('categorySelect').addEventListener('change', () => startGame());
+        // levelSelect change event removed so manual dropdown changes don't auto-reset unless intended, but restart/try again strictly respects current level box.
 
         window.addEventListener('resize', resizeCanvas);
 
