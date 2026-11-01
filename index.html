@@ -2,549 +2,663 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Crowd Runner & Mob Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Rifle Shooter & Crowd Runner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Tone.js for Sound FX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #87ceeb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #070e17;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: none;
         }
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-            display: block;
+
+        .hud-shadow {
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 12px rgba(6, 182, 212, 0.5);
         }
-        #ui {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 15px;
-            box-sizing: border-box;
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.5);
         }
-        .top-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            width: 100%;
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
         }
-        .coin-card {
-            background: rgba(30, 41, 59, 0.9);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            pointer-events: auto;
-        }
-        .coin-icon {
-            width: 24px;
-            height: 24px;
-            background: #facc15;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #78350f;
-            font-size: 14px;
-        }
-        .mob-size-card {
-            background: rgba(15, 23, 42, 0.9);
-            border: 2px solid rgba(56, 189, 248, 0.4);
-            padding: 8px 24px;
-            border-radius: 16px;
-            color: #fff;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .mob-title {
-            font-size: 11px;
-            color: #38bdf8;
-            letter-spacing: 1px;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-        .mob-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .pause-btn {
-            pointer-events: auto;
-            background: rgba(30, 41, 59, 0.9);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        #boss-health-container {
-            position: absolute;
-            top: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 260px;
-            background: rgba(0,0,0,0.7);
-            border: 2px solid #ef4444;
-            border-radius: 8px;
-            padding: 4px;
-            display: none;
-            text-align: center;
-        }
-        #boss-health-bar {
-            width: 100%;
-            height: 14px;
-            background: #ef4444;
-            border-radius: 4px;
-            transition: width 0.2s;
-        }
-        #start-screen, #game-over-screen, #level-win-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.99) 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            z-index: 10;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 {
-            font-size: 2.6rem;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #38bdf8, #facc15);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        p {
-            font-size: 1.1rem;
-            margin-bottom: 25px;
-            color: #94a3b8;
-            max-width: 500px;
-            line-height: 1.5;
-        }
-        .btn {
-            background: linear-gradient(135deg, #0ea5e9, #2563eb);
-            border: none;
-            padding: 14px 38px;
-            color: white;
-            font-size: 1.4rem;
-            font-weight: bold;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4);
-            pointer-events: auto;
-        }
-        #game-over-screen, #level-win-screen {
-            display: none;
+        .btn-gradient:active {
+            transform: scale(0.96);
         }
     </style>
-    <!-- Three.js & Tone.js Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 </head>
-<body>
+<body class="w-screen h-screen relative overflow-hidden">
 
-    <div id="canvas-container"></div>
+    <!-- 3D Canvas -->
+    <div id="canvas-container" class="w-full h-full absolute inset-0 z-0"></div>
 
-    <div id="ui">
-        <div class="top-row">
-            <div class="coin-card">
-                <div class="coin-icon">🪙</div>
-                <span id="coin-count">0</span>
+    <!-- HUD Overlay -->
+    <div id="hud-layer" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
+        <!-- Top Bar -->
+        <div class="w-full flex justify-between items-center">
+            <!-- Coins -->
+            <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-amber-400 border-2 border-amber-200 flex items-center justify-center text-amber-950 font-black text-sm shadow-md">
+                    🪙
+                </div>
+                <span id="hud-coins" class="text-2xl font-black text-amber-300 hud-shadow">0</span>
             </div>
-            <div class="mob-size-card">
-                <div class="mob-title">MOB SIZE</div>
-                <div class="mob-value" id="mob-size">44</div>
+
+            <!-- Mob / Bullet Power -->
+            <div class="glass-panel px-5 py-2 rounded-2xl flex flex-col items-center">
+                <span class="text-[10px] text-cyan-400 font-bold tracking-widest uppercase">CROWD SIZE</span>
+                <span id="hud-mob-count" class="text-2xl font-black text-cyan-300 hud-shadow">44</span>
             </div>
-            <button class="pause-btn" id="pause-btn">⏸</button>
+
+            <!-- Pause Button -->
+            <button id="pause-btn" class="glass-panel w-11 h-11 rounded-2xl pointer-events-auto flex items-center justify-center text-white text-lg active:scale-95 transition">
+                ⏸️
+            </button>
         </div>
-        <div id="boss-health-container">
-            <div style="font-size: 11px; color: #ffbcbc; margin-bottom: 2px; font-weight: bold;">GIANT BOSS HEALTH: <span id="boss-hp-text">150</span></div>
-            <div id="boss-health-bar"></div>
+
+        <!-- Controls Hint -->
+        <div class="w-full text-center pb-2 opacity-80">
+            <span class="text-xs text-white font-medium bg-slate-900/70 px-4 py-1.5 rounded-full border border-white/10 shadow">
+                👈 Drag or Arrow Keys to Aim & Steer Shooter 👉
+            </span>
         </div>
     </div>
 
-    <div id="start-screen">
-        <h1>3D Crowd Runner</h1>
-        <p>ছবির মতো বামে আপগ্রেড স্টেপ (+1), ডানে কয়েন সিলিন্ডার (70), সামনে মাল্টিপ্লায়ার গেট (x3) এবং ৩০ সেকেন্ড পর বিশাল জায়ান্ট বস! লেভেল ১ থেকে ২০ পর্যন্ত খেলুন।</p>
-        <button class="btn" id="start-btn">PLAY GAME</button>
+    <!-- Start Overlay -->
+    <div id="start-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex items-center justify-center p-6 text-white text-center">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-8 flex flex-col items-center gap-6 border border-cyan-500/30">
+            <div class="space-y-1">
+                <h1 class="text-3xl md:text-4xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+                    3D RIFLE SHOOTER
+                </h1>
+                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Crowd Runner & Golem Clash</p>
+            </div>
+
+            <div class="w-full bg-slate-900/80 rounded-2xl p-4 border border-white/10 text-xs text-slate-300 space-y-2 text-left">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🔫</span>
+                    <span>Continuous automatic rifle shooting</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-base">⚡</span>
+                    <span>Shoot & Pass through Multiplier Gates (<b class="text-cyan-400">+1, +5, x2, x3</b>) to increase crowd size!</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🚧</span>
+                    <span>Avoid road barriers and blast incoming Red Enemies!</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-base">👹</span>
+                    <span>Defeat the Giant Golem Boss at the finish line!</span>
+                </div>
+            </div>
+
+            <button id="start-btn" class="w-full py-4 btn-gradient rounded-2xl font-extrabold text-xl uppercase tracking-wider text-white shadow-xl cursor-pointer">
+                START SHOOTING 🚀
+            </button>
+        </div>
     </div>
 
-    <div id="level-win-screen">
-        <h1>VICTORY!</h1>
-        <p>বিশাল দৈত্য বসকে পরাজিত করা হয়েছে!</p>
-        <button class="btn" id="next-level-btn">NEXT LEVEL</button>
+    <!-- Game Over Screen -->
+    <div id="end-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-lg z-40 hidden flex items-center justify-center p-6 text-white text-center">
+        <div class="max-w-sm w-full glass-panel rounded-3xl p-8 flex flex-col items-center gap-6 border shadow-2xl">
+            <div id="end-icon" class="text-5xl animate-bounce">🏆</div>
+            <h2 id="end-title" class="text-3xl font-black tracking-wider">VICTORY!</h2>
+
+            <div class="w-full bg-slate-900/80 rounded-2xl p-4 border border-white/10 flex flex-col gap-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">COINS COLLECTED</span>
+                    <span id="end-coins" class="text-xl font-bold text-amber-400">0 🪙</span>
+                </div>
+                <div class="w-full h-px bg-white/10"></div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">SCORE</span>
+                    <span id="end-score" class="text-xl font-black text-cyan-400">0</span>
+                </div>
+            </div>
+
+            <button id="restart-btn" class="w-full py-4 btn-gradient rounded-2xl font-extrabold text-xl uppercase tracking-wider text-white shadow-xl cursor-pointer">
+                PLAY AGAIN 🔄
+            </button>
+        </div>
     </div>
 
-    <div id="game-over-screen">
-        <h1>GAME OVER</h1>
-        <p>এনিমিরা আপনার মব দল শেষ করে দিয়েছে!</p>
-        <button class="btn" id="restart-btn">TRY AGAIN</button>
-    </div>
-
+    <!-- Sound Audio Synthesizer -->
     <script>
-        let scene, camera, renderer;
-        let crowdGroup;
-        let roadSegments = [];
-        let enemies = [];
-        let gates = [];
-        let coins = [];
-        let upgrades = [];
-        let boss = null;
+        class SoundEngine {
+            constructor() {
+                this.initialized = false;
+            }
+            async init() {
+                if (this.initialized) return;
+                await Tone.start();
+                this.synth = new Tone.Synth({
+                    oscillator: { type: "sawtooth" },
+                    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.02 }
+                }).toDestination();
+                this.synth.volume.value = -14;
 
-        let currentLevel = 1;
-        let maxLevels = 20;
-        let gameRunning = false;
-        let mobSize = 44;
-        let coinCount = 0;
-        let playerX = 0;
-        let targetX = 0;
-        
-        let levelTimer = 30;
-        let levelTimeElapsed = 0;
-        let timerInterval = null;
-        let inBossFight = false;
-        let bossMaxHealth = 150;
-        let bossHealth = 150;
+                this.polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                this.polySynth.volume.value = -10;
 
-        let synth = new Tone.Synth().toDestination();
-        let metalSynth = new Tone.MetalSynth().toDestination();
-
-        function playSound(type) {
-            try {
-                if (type === 'coin') synth.triggerAttackRelease("A5", "32n");
-                else if (type === 'gate') synth.triggerAttackRelease("C5", "16n");
-                else if (type === 'hit') metalSynth.triggerAttackRelease("C2", "8n");
-                else if (type === 'win') synth.triggerAttackRelease("E6", "8n");
-            } catch(e) {}
+                this.noiseSynth = new Tone.NoiseSynth({
+                    envelope: { attack: 0.001, decay: 0.08, sustain: 0 }
+                }).toDestination();
+                this.noiseSynth.volume.value = -18;
+                this.initialized = true;
+            }
+            playShoot() {
+                if (!this.initialized) return;
+                this.synth.triggerAttackRelease("A4", "32n");
+            }
+            playGate() {
+                if (!this.initialized) return;
+                this.polySynth.triggerAttackRelease(["E5", "G5", "B5"], "16n");
+            }
+            playCoin() {
+                if (!this.initialized) return;
+                this.synth.triggerAttackRelease("C6", "16n");
+            }
+            playHit() {
+                if (!this.initialized) return;
+                this.noiseSynth.triggerAttackRelease("16n");
+            }
+            playVictory() {
+                if (!this.initialized) return;
+                this.polySynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "8n");
+            }
+            playGameOver() {
+                if (!this.initialized) return;
+                this.polySynth.triggerAttackRelease(["F4", "D4", "B3"], "4n");
+            }
         }
+        const soundFX = new SoundEngine();
+    </script>
 
-        function init() {
+    <!-- Main Game Logic -->
+    <script>
+        const TRACK_WIDTH = 12;
+        const TRACK_LENGTH = 350;
+
+        let scene, camera, renderer;
+        let playerGroup;
+        let bullets = [];
+        let redMobs = [];
+        let gates = [];
+        let obstacles = [];
+        let bosses = [];
+        let coinPillars = [];
+
+        let isRunning = false;
+        let isPaused = false;
+        let coins = 0;
+        let score = 0;
+        let mobSize = 44;
+        let playerX = 0;
+        let playerZ = 120;
+        let shootTimer = 0;
+        let shootInterval = 0.1;
+
+        const clock = new THREE.Clock();
+        const keys = { left: false, right: false };
+
+        function init3D() {
             const container = document.getElementById('canvas-container');
 
+            // Scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.FogExp2(0x87ceeb, 0.012);
+            scene.background = new THREE.Color(0x7dd3fc);
+            scene.fog = new THREE.FogExp2(0x7dd3fc, 0.005);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 5, 8);
-            camera.lookAt(0, 1, 0);
+            // Camera
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 18, 140);
+            camera.lookAt(0, 2, 90);
 
+            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-            scene.add(ambientLight);
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(10, 30, 10);
-            scene.add(dirLight);
+            const sun = new THREE.DirectionalLight(0xfffbeb, 1.1);
+            sun.position.set(30, 60, 30);
+            sun.castShadow = true;
+            scene.add(sun);
 
-            createRoad();
+            // Build Environment
+            buildTrack();
+            buildShooterPlayer();
+            buildLevelObjects();
+
             setupControls();
-
             window.addEventListener('resize', onWindowResize);
-            document.getElementById('start-btn').addEventListener('click', startGame);
-            document.getElementById('next-level-btn').addEventListener('click', startNextLevel);
-            document.getElementById('restart-btn').addEventListener('click', restartGame);
-            document.getElementById('pause-btn').addEventListener('click', () => { gameRunning = !gameRunning; });
 
-            animate();
+            renderer.setAnimationLoop(gameLoop);
         }
 
-        function createRoad() {
-            const roadWidth = 10;
-            const segmentLength = 50;
-            const roadMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
-            const borderMat = new THREE.MeshLambertMaterial({ color: 0x3b82f6 });
+        // --- Bridge Track ---
+        function buildTrack() {
+            const roadGeo = new THREE.BoxGeometry(TRACK_WIDTH, 2, TRACK_LENGTH);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.position.set(0, -1, -50);
+            road.receiveShadow = true;
+            scene.add(road);
 
-            for (let i = 0; i < 12; i++) {
-                const group = new THREE.Group();
-                const roadMesh = new THREE.Mesh(new THREE.PlaneGeometry(roadWidth, segmentLength), roadMat);
-                roadMesh.rotation.x = -Math.PI / 2;
-                group.add(roadMesh);
+            const railGeo = new THREE.BoxGeometry(0.8, 1.2, TRACK_LENGTH);
+            const railMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+            const railL = new THREE.Mesh(railGeo, railMat);
+            railL.position.set(-TRACK_WIDTH / 2 - 0.4, 0.6, -50);
+            const railR = new THREE.Mesh(railGeo, railMat);
+            railR.position.set(TRACK_WIDTH / 2 + 0.4, 0.6, -50);
+            scene.add(railL);
+            scene.add(railR);
+        }
 
-                const leftBorder = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, segmentLength), borderMat);
-                leftBorder.position.set(-roadWidth/2, 0.3, 0);
-                group.add(leftBorder);
+        // --- Shooter Character with Rifle ---
+        function buildShooterPlayer() {
+            playerGroup = new THREE.Group();
 
-                const rightBorder = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.6, segmentLength), borderMat);
-                rightBorder.position.set(roadWidth/2, 0.3, 0);
-                group.add(rightBorder);
+            const matBlue = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+            const matSkin = new THREE.MeshStandardMaterial({ color: 0xffd1b3 });
+            const matDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
 
-                group.position.z = -i * segmentLength + 10;
-                scene.add(group);
-                roadSegments.push(group);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), matSkin);
+            head.position.y = 1.4;
+            head.castShadow = true;
+            playerGroup.add(head);
+
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1.0, 12), matBlue);
+            body.position.y = 0.7;
+            body.castShadow = true;
+            playerGroup.add(body);
+
+            const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8), matDark);
+            gunBarrel.rotation.x = Math.PI / 2;
+            gunBarrel.position.set(0.3, 0.8, -0.6);
+            playerGroup.add(gunBarrel);
+
+            const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.7), matDark);
+            gunBody.position.set(0.3, 0.7, -0.2);
+            playerGroup.add(gunBody);
+
+            playerGroup.position.set(0, 0, playerZ);
+            scene.add(playerGroup);
+        }
+
+        // --- Level Elements with Gates, Obstacles, Enemies & Boss ---
+        function buildLevelObjects() {
+            // Multiplier Gates (+1, +5, x2, x3)
+            createGate(-2, 80, '+5', 5, false);
+            createGate(2, 40, 'x2', 2, true);
+            createGate(-1, 0, '+10', 10, false);
+            createGate(1, -40, 'x3', 3, true);
+
+            // Obstacles / Road Barriers
+            createObstacle(-3, 60);
+            createObstacle(3, 20);
+            createObstacle(0, -20);
+
+            // Coin Cylinders
+            createCoinCylinder(TRACK_WIDTH / 2 + 2.5, 60, 70);
+            createCoinCylinder(TRACK_WIDTH / 2 + 2.5, -10, 70);
+
+            // Enemy Red Swarms
+            createRedEnemies(0, 50, 25);
+            createRedEnemies(-2, 10, 35);
+            createRedEnemies(2, -30, 40);
+
+            // Giant Golem Boss at Finishing Line
+            createGolemBoss(0, -120, 150);
+        }
+
+        function createGate(x, z, labelText, factor, isMultiplier) {
+            const group = new THREE.Group();
+            const width = 5.5;
+            const height = 3.5;
+
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a });
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, 0.5), frameMat);
+            topBar.position.y = height;
+            group.add(topBar);
+
+            const pillarL = new THREE.Mesh(new THREE.BoxGeometry(0.5, height, 0.5), frameMat);
+            pillarL.position.set(-width / 2 + 0.25, height / 2, 0);
+            const pillarR = new THREE.Mesh(new THREE.BoxGeometry(0.5, height, 0.5), frameMat);
+            pillarR.position.set(width / 2 - 0.25, height / 2, 0);
+            group.add(pillarL);
+            group.add(pillarR);
+
+            const screen = new THREE.Mesh(
+                new THREE.PlaneGeometry(width - 0.6, height - 0.5),
+                new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
+            );
+            screen.position.y = height / 2;
+            group.add(screen);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(labelText, 128, 64);
+
+            const textMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.5, 1.8),
+                new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true })
+            );
+            textMesh.position.set(0, height / 2, 0.1);
+            group.add(textMesh);
+
+            group.position.set(x, 0, z);
+            group.userData = { factor, isMultiplier, active: true };
+            scene.add(group);
+            gates.push(group);
+        }
+
+        function createObstacle(x, z) {
+            const obsMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4 });
+            const obs = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 0.8), obsMat);
+            obs.position.set(x, 0.7, z);
+            obs.castShadow = true;
+            scene.add(obs);
+            obstacles.push(obs);
+        }
+
+        function createCoinCylinder(x, z, coinAmount) {
+            const group = new THREE.Group();
+            const glass = new THREE.Mesh(
+                new THREE.CylinderGeometry(1.6, 1.6, 7, 24),
+                new THREE.MeshPhysicalMaterial({ color: 0xfef08a, transparent: true, opacity: 0.5, transmission: 0.8 })
+            );
+            glass.position.y = 3.5;
+            group.add(glass);
+
+            const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 });
+            for (let y = 0.8; y < 6.5; y += 0.5) {
+                const coin = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.3, 16), coinMat);
+                coin.position.y = y;
+                group.add(coin);
             }
+
+            group.position.set(x, 0, z);
+            group.userData = { coins: coinAmount, active: true };
+            scene.add(group);
+            coinPillars.push(group);
+        }
+
+        function createRedEnemies(centerX, centerZ, count) {
+            const matRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+            for (let i = 0; i < count; i++) {
+                const group = new THREE.Group();
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), matRed);
+                head.position.y = 1.1;
+                group.add(head);
+
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 0.8, 12), matRed);
+                body.position.y = 0.55;
+                group.add(body);
+
+                const offsetX = (Math.random() - 0.5) * 6;
+                const offsetZ = (Math.random() - 0.5) * 8;
+                group.position.set(centerX + offsetX, 0, centerZ + offsetZ);
+                scene.add(group);
+                redMobs.push(group);
+            }
+        }
+
+        function createGolemBoss(x, z, hp) {
+            const group = new THREE.Group();
+            const matBoss = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4 });
+
+            const torso = new THREE.Mesh(new THREE.DodecahedronGeometry(2.8, 1), matBoss);
+            torso.position.y = 3.5;
+            group.add(torso);
+
+            const crown = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1.8, 5), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+            crown.position.set(0, 6.0, 0);
+            group.add(crown);
+
+            const hpBack = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 0.8), new THREE.MeshBasicMaterial({ color: 0x0f172a }));
+            hpBack.position.set(0, 8.0, 0);
+            group.add(hpBack);
+
+            const hpBar = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+            hpBar.position.set(0, 8.0, 0.05);
+            group.add(hpBar);
+
+            group.position.set(x, 0, z);
+            group.userData = { maxHp: hp, currentHp: hp, hpBarMesh: hpBar };
+            scene.add(group);
+            bosses.push(group);
+        }
+
+        function spawnBullet(xPos, zPos) {
+            const bulletGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8);
+            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+            const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+            bullet.rotation.x = Math.PI / 2;
+            bullet.position.set(xPos, 0.7, zPos);
+            scene.add(bullet);
+            bullets.push(bullet);
         }
 
         function setupControls() {
             window.addEventListener('keydown', (e) => {
-                if (!gameRunning) return;
-                if ((e.key === 'ArrowLeft' || e.key === 'a') && targetX > -3.8) targetX -= 1.0;
-                if ((e.key === 'ArrowRight' || e.key === 'd') && targetX < 3.8) targetX += 1.0;
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
             });
 
-            let touchX = 0;
-            window.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; });
-            window.addEventListener('touchmove', (e) => {
-                if (!gameRunning) return;
-                let diff = e.touches[0].clientX - touchX;
-                if (diff > 15 && targetX < 3.8) { targetX += 1.0; touchX = e.touches[0].clientX; }
-                else if (diff < -15 && targetX > -3.8) { targetX -= 1.0; touchX = e.touches[0].clientX; }
-            });
+            let isDragging = false;
+            let lastX = 0;
+            const onDown = (e) => {
+                if (!isRunning || isPaused) return;
+                isDragging = true;
+                lastX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+            };
+            const onMove = (e) => {
+                if (!isDragging) return;
+                const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+                playerX += (currentX - lastX) * 0.04;
+                playerX = Math.max(-TRACK_WIDTH / 2 + 1, Math.min(TRACK_WIDTH / 2 - 1, playerX));
+                lastX = currentX;
+            };
+            const onUp = () => { isDragging = false; };
+
+            window.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            window.addEventListener('touchstart', onDown);
+            window.addEventListener('touchmove', onMove);
+            window.addEventListener('touchend', onUp);
+
+            document.getElementById('start-btn').addEventListener('click', startGame);
+            document.getElementById('restart-btn').addEventListener('click', startGame);
+            document.getElementById('pause-btn').addEventListener('click', togglePause);
         }
 
-        function spawnLevelElements() {
-            enemies.forEach(e => scene.remove(e.mesh));
-            gates.forEach(g => scene.remove(g.mesh));
-            coins.forEach(c => scene.remove(c.mesh));
-            upgrades.forEach(u => scene.remove(u.mesh));
-            enemies = [];
-            gates = [];
-            coins = [];
-            upgrades = [];
-            if (boss) { scene.remove(boss); boss = null; }
-
-            inBossFight = false;
-            levelTimeElapsed = 0;
-            document.getElementById('boss-health-container').style.display = 'none';
-            document.getElementById('time-left')?.remove(); // clean up if any
-
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                if (!gameRunning || inBossFight) return;
-                levelTimeElapsed++;
-                if (levelTimeElapsed >= levelTimer) {
-                    clearInterval(timerInterval);
-                    spawnBoss();
-                }
-            }, 1000);
-
-            let count = 5 + currentLevel;
-            for (let i = 1; i <= count; i++) {
-                let zPos = -i * 200;
-
-                // Left Side Upgrades (+1 blue stairs matching image)
-                let upGroup = createUpgradeMesh();
-                upGroup.position.set(-3.5, 0, zPos);
-                scene.add(upGroup);
-                upgrades.push({ mesh: upGroup, z: zPos, passed: false });
-
-                // Center Multiplier Gates (x3, x2)
-                let gateType = Math.random() > 0.5 ? 'x3' : 'x2';
-                let gateGroup = createGateMesh(gateType);
-                gateGroup.position.set(0, 0, zPos - 60);
-                scene.add(gateGroup);
-                gates.push({ mesh: gateGroup, type: gateType, z: zPos - 60, passed: false });
-
-                // Right Side Coin Cylinder (matching image 70 coins container)
-                let coinGroup = createCoinCylinderMesh();
-                coinGroup.position.set(3.5, 0, zPos - 30);
-                scene.add(coinGroup);
-                coins.push({ mesh: coinGroup, z: zPos - 30, collected: false });
-
-                // Red Enemy Swarm
-                let enemyMesh = createEnemySwarmMesh();
-                enemyMesh.position.set(0, 0.6, zPos - 120);
-                scene.add(enemyMesh);
-                enemies.push({ mesh: enemyMesh, z: zPos - 120, active: true });
-            }
-        }
-
-        function createUpgradeMesh() {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshLambertMaterial({ color: 0x3b82f6 });
-            for(let j=0; j<4; j++) {
-                let step = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 1.2), mat);
-                step.position.set(0, j * 0.3, j * 1.0);
-                group.add(step);
-            }
-            return group;
-        }
-
-        function createGateMesh(type) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshLambertMaterial({ color: 0x2563eb, transparent: true, opacity: 0.85 });
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(4.0, 3.2, 0.25), mat);
-            frame.position.y = 1.6;
-            group.add(frame);
-            return group;
-        }
-
-        function createCoinCylinderMesh() {
-            const group = new THREE.Group();
-            const glassMat = new THREE.MeshLambertMaterial({ color: 0xfacc15, transparent: true, opacity: 0.4 });
-            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 6, 16), glassMat);
-            cylinder.position.y = 3;
-            group.add(cylinder);
-            return group;
-        }
-
-        function createEnemySwarmMesh() {
-            const mat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.2, 2.5), mat);
-            return mesh;
-        }
-
-        function spawnBoss() {
-            inBossFight = true;
-            bossMaxHealth = 150 + (currentLevel * 30);
-            bossHealth = bossMaxHealth;
-
-            const bossMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
-            boss = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.5, 2.0), bossMat);
-            boss.position.set(0, 1.75, -90);
-            scene.add(boss);
-
-            document.getElementById('boss-health-container').style.display = 'block';
-            document.getElementById('boss-hp-text').innerText = bossHealth;
-            document.getElementById('boss-health-bar').style.width = '100%';
-        }
-
-        function startGame() {
-            Tone.start();
-            document.getElementById('start-screen').style.display = 'none';
-            gameRunning = true;
+        async function startGame() {
+            await soundFX.init();
+            coins = 0;
+            score = 0;
             mobSize = 44;
-            coinCount = 0;
-            currentLevel = 1;
-            loadLevel();
+            playerX = 0;
+            playerZ = 120;
+            isRunning = true;
+            isPaused = false;
+
+            bullets.forEach(b => scene.remove(b));
+            bullets = [];
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('hud-coins').innerText = '0';
+            document.getElementById('hud-mob-count').innerText = mobSize;
+            clock.start();
         }
 
-        function loadLevel() {
-            spawnLevelElements();
+        function togglePause() {
+            if (!isRunning) return;
+            isPaused = !isPaused;
+            document.getElementById('pause-btn').innerText = isPaused ? '▶️' : '⏸️';
         }
 
-        function startNextLevel() {
-            document.getElementById('level-win-screen').style.display = 'none';
-            currentLevel++;
-            if (currentLevel > maxLevels) {
-                alert("অভিনন্দন! আপনি ২০টি লেভেল সম্পন্ন করেছেন!");
-                currentLevel = 1;
-            }
-            gameRunning = true;
-            loadLevel();
-        }
-
-        function restartGame() {
-            document.getElementById('game-over-screen').style.display = 'none';
-            currentLevel = 1;
-            gameRunning = true;
-            loadLevel();
-        }
-
-        function updateGame() {
-            if (!gameRunning) return;
-
-            playerX += (targetX - playerX) * 0.2;
-
-            roadSegments.forEach(seg => {
-                seg.position.z += 0.65;
-                if (seg.position.z > 60) seg.position.z -= 600;
-            });
-
-            // Update Upgrades
-            upgrades.forEach(u => {
-                u.mesh.position.z += 0.65;
-                if (!u.passed && u.mesh.position.z > -2 && u.mesh.position.z < 2 && Math.abs(playerX - u.mesh.position.x) < 2.0) {
-                    u.passed = true;
-                    mobSize += 5;
-                    playSound('gate');
-                }
-            });
-
-            // Update Gates
-            gates.forEach(g => {
-                g.mesh.position.z += 0.65;
-                if (!g.passed && g.mesh.position.z > -2 && g.mesh.position.z < 2 && Math.abs(playerX - g.mesh.position.x) < 2.5) {
-                    g.passed = true;
-                    if (g.type === 'x3') mobSize *= 3;
-                    else mobSize *= 2;
-                    playSound('gate');
-                }
-            });
-
-            // Update Coins
-            coins.forEach(c => {
-                c.mesh.position.z += 0.65;
-                if (!c.collected && c.mesh.position.z > -2 && c.mesh.position.z < 2 && Math.abs(playerX - c.mesh.position.x) < 2.0) {
-                    c.collected = true;
-                    coinCount += 70;
-                    playSound('coin');
-                }
-            });
-
-            // Update Enemies & Boss
-            if (inBossFight && boss) {
-                boss.position.z += 0.65;
-                bossHealth -= Math.max(1, Math.floor(mobSize / 10));
-                let pct = Math.max(0, (bossHealth / bossMaxHealth) * 100);
-                document.getElementById('boss-health-bar').style.width = pct + '%';
-                document.getElementById('boss-hp-text').innerText = Math.max(0, bossHealth);
-
-                if (bossHealth <= 0) {
-                    scene.remove(boss);
-                    boss = null;
-                    if (timerInterval) clearInterval(timerInterval);
-                    document.getElementById('boss-health-container').style.display = 'none';
-                    gameRunning = false;
-                    playSound('win');
-                    document.getElementById('level-win-screen').style.display = 'flex';
-                }
+        function triggerGameOver(victory = false) {
+            isRunning = false;
+            if (victory) {
+                soundFX.playVictory();
+                document.getElementById('end-title').innerText = "VICTORY!";
+                document.getElementById('end-title').className = "text-3xl font-black text-emerald-400 tracking-wider";
             } else {
-                enemies.forEach(e => {
-                    e.mesh.position.z += 0.65;
-                    if (e.mesh.position.z > -3 && e.mesh.position.z < 2) {
-                        mobSize -= 15;
-                        playSound('hit');
-                        e.mesh.position.z = -1000; // remove after clash
-                        if (mobSize <= 0) {
-                            gameOver();
+                soundFX.playGameOver();
+                document.getElementById('end-title').innerText = "DEFEAT!";
+                document.getElementById('end-title').className = "text-3xl font-black text-rose-500 tracking-wider";
+            }
+            document.getElementById('end-coins').innerText = `${coins} 🪙`;
+            document.getElementById('end-score').innerText = score;
+            document.getElementById('end-screen').classList.remove('hidden');
+        }
+
+        function gameLoop() {
+            const delta = clock.getDelta();
+
+            if (isRunning && !isPaused) {
+                if (keys.left) playerX -= 12 * delta;
+                if (keys.right) playerX += 12 * delta;
+                playerX = Math.max(-TRACK_WIDTH / 2 + 1, Math.min(TRACK_WIDTH / 2 - 1, playerX));
+                
+                playerZ -= 6 * delta;
+                playerGroup.position.set(playerX, 0, playerZ);
+
+                camera.position.set(playerX * 0.5, 18, playerZ + 20);
+                camera.lookAt(playerX * 0.5, 2, playerZ - 20);
+
+                shootTimer += delta;
+                if (shootTimer >= shootInterval) {
+                    shootTimer = 0;
+                    spawnBullet(playerX + 0.3, playerZ - 0.8);
+                    soundFX.playShoot();
+                }
+
+                // Bullets movement & collision
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const b = bullets[i];
+                    b.position.z -= 45 * delta;
+
+                    // Bullet vs Multiplier Gates (+1, +5, x2, x3)
+                    gates.forEach(gate => {
+                        if (gate.userData.active && Math.abs(b.position.z - gate.position.z) < 1.0) {
+                            if (Math.abs(b.position.x - gate.position.x) < 2.5) {
+                                gate.userData.active = false;
+                                soundFX.playGate();
+                                if (gate.userData.isMultiplier) {
+                                    mobSize = Math.floor(mobSize * gate.userData.factor);
+                                } else {
+                                    mobSize += gate.userData.factor;
+                                }
+                                document.getElementById('hud-mob-count').innerText = mobSize;
+                            }
+                        }
+                    });
+
+                    // Bullet vs Coin Pillar Collection
+                    coinPillars.forEach(cp => {
+                        if (cp.userData.active && Math.abs(b.position.z - cp.position.z) < 1.5) {
+                            if (Math.abs(b.position.x - cp.position.x) < 2.0) {
+                                cp.userData.active = false;
+                                soundFX.playCoin();
+                                coins += cp.userData.coins;
+                                score += 200;
+                                document.getElementById('hud-coins').innerText = coins;
+                                scene.remove(cp);
+                            }
+                        }
+                    });
+
+                    // Bullet vs Red Enemy Collision
+                    for (let r = redMobs.length - 1; r >= 0; r--) {
+                        const red = redMobs[r];
+                        if (b.position.distanceTo(red.position) < 0.9) {
+                            soundFX.playHit();
+                            score += 10;
+                            scene.remove(b);
+                            scene.remove(red);
+                            bullets.splice(i, 1);
+                            redMobs.splice(r, 1);
+                            break;
                         }
                     }
+
+                    // Bullet vs Golem Boss Collision (Finishing Line)
+                    bosses.forEach(boss => {
+                        if (boss.userData.currentHp > 0 && b.position.distanceTo(boss.position) < 3.5) {
+                            soundFX.playHit();
+                            boss.userData.currentHp -= 1;
+                            boss.userData.hpBarMesh.scale.x = Math.max(0, boss.userData.currentHp / boss.userData.maxHp);
+                            scene.remove(b);
+                            bullets.splice(i, 1);
+
+                            if (boss.userData.currentHp <= 0) {
+                                scene.remove(boss);
+                                coins += 150;
+                                score += 1000;
+                                triggerGameOver(true);
+                            }
+                        }
+                    });
+
+                    if (b && b.position.z < playerZ - 120) {
+                        scene.remove(b);
+                        bullets.splice(i, 1);
+                    }
+                }
+
+                // Player vs Obstacles Collision Check
+                obstacles.forEach(obs => {
+                    if (playerGroup.position.distanceTo(obs.position) < 1.4) {
+                        triggerGameOver(false);
+                        return;
+                    }
                 });
+
+                // Player vs Red Enemy Collision Check
+                for (let r = 0; r < redMobs.length; r++) {
+                    if (playerGroup.position.distanceTo(redMobs[r].position) < 1.0) {
+                        triggerGameOver(false);
+                        return;
+                    }
+                }
             }
 
-            document.getElementById('mob-size').innerText = Math.max(0, mobSize);
-            document.getElementById('coin-count').innerText = coinCount;
-        }
-
-        function gameOver() {
-            gameRunning = false;
-            if (timerInterval) clearInterval(timerInterval);
-            playSound('hit');
-            document.getElementById('game-over-screen').style.display = 'flex';
+            renderer.render(scene, camera);
         }
 
         function onWindowResize() {
@@ -553,13 +667,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            updateGame();
-            renderer.render(scene, camera);
-        }
-
-        window.onload = init;
+        window.onload = init3D;
     </script>
 </body>
 </html>
