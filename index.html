@@ -3,779 +3,678 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Rifle Shooter & Crowd Runner</title>
-    <!-- Tailwind CSS -->
+    <title>Tom & Friends Metallic Green Maze Dash</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Tone.js for Sound FX -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800&display=swap');
+        
         body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #070e17;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Fredoka', sans-serif;
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            background-color: #060911;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        .arcade-card {
+            background: linear-gradient(145deg, #131926, #090d16);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+            border: 1.5px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .arcade-btn {
+            background: linear-gradient(180deg, #10b981 0%, #047857 100%);
+            box-shadow: 0 3px 0 #065f46, 0 4px 8px rgba(0,0,0,0.5);
+            transition: all 0.1s ease;
+        }
+
+        .arcade-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #065f46, 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        /* 9:16 Aspect Ratio Shorts Container with Flexible Heights */
+        .shorts-container {
+            aspect-ratio: 9 / 16;
+            width: 100%;
+            max-width: 360px;
+            max-height: 68vh;
+            position: relative;
+        }
+
+        canvas {
             touch-action: none;
-        }
-
-        .hud-shadow {
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 12px rgba(6, 182, 212, 0.5);
-        }
-
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.5);
-        }
-
-        .btn-gradient {
-            background: linear-gradient(135deg, #0284c7, #2563eb);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-        }
-        .btn-gradient:active {
-            transform: scale(0.96);
+            image-rendering: pixelated;
         }
     </style>
 </head>
-<body class="w-screen h-screen relative overflow-hidden">
+<body class="text-white h-screen flex flex-col items-center justify-between p-2 overflow-hidden select-none">
 
-    <!-- 3D Canvas -->
-    <div id="canvas-container" class="w-full h-full absolute inset-0 z-0"></div>
-
-    <!-- HUD Overlay -->
-    <div id="hud-layer" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-6 z-10">
-        <!-- Top Bar -->
-        <div class="w-full flex justify-between items-center">
-            <!-- Coins -->
-            <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-amber-400 border-2 border-amber-200 flex items-center justify-center text-amber-950 font-black text-sm shadow-md">
-                    🪙
-                </div>
-                <span id="hud-coins" class="text-2xl font-black text-amber-300 hud-shadow">0</span>
+    <!-- Top Header HUD -->
+    <header class="w-full max-w-sm flex items-center justify-between gap-1.5 p-2 arcade-card rounded-xl shrink-0">
+        <div class="flex items-center gap-1.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-400/40 text-lg">
+                🐱
             </div>
-
-            <!-- Level & Crowd Size -->
-            <div class="flex gap-2">
-                <div class="glass-panel px-4 py-2 rounded-2xl flex flex-col items-center">
-                    <span class="text-[10px] text-amber-400 font-bold tracking-widest uppercase">LEVEL</span>
-                    <span id="hud-level" class="text-2xl font-black text-amber-300 hud-shadow">1</span>
-                </div>
-                <div class="glass-panel px-5 py-2 rounded-2xl flex flex-col items-center">
-                    <span class="text-[10px] text-cyan-400 font-bold tracking-widest uppercase">CROWD SIZE</span>
-                    <span id="hud-mob-count" class="text-2xl font-black text-cyan-300 hud-shadow">44</span>
-                </div>
-            </div>
-
-            <!-- Pause Button -->
-            <button id="pause-btn" class="glass-panel w-11 h-11 rounded-2xl pointer-events-auto flex items-center justify-center text-white text-lg active:scale-95 transition">
-                ⏸️
-            </button>
-        </div>
-
-        <!-- Controls Hint -->
-        <div class="w-full text-center pb-2 opacity-80">
-            <span class="text-xs text-white font-medium bg-slate-900/70 px-4 py-1.5 rounded-full border border-white/10 shadow">
-                👈 Drag or Arrow Keys to Aim & Steer Shooter 👉
-            </span>
-        </div>
-    </div>
-
-    <!-- Start Overlay -->
-    <div id="start-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-30 flex items-center justify-center p-6 text-white text-center">
-        <div class="max-w-md w-full glass-panel rounded-3xl p-8 flex flex-col items-center gap-6 border border-cyan-500/30">
-            <div class="space-y-1">
-                <h1 class="text-3xl md:text-4xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
-                    3D RIFLE SHOOTER
+            <div>
+                <h1 class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-yellow-300 leading-none">
+                    TOM MAZE SHORTS
                 </h1>
-                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Levels 1 to 20 • Boss Hand-to-Hand Combat</p>
+                <p id="modeBadge" class="text-[9px] text-emerald-400 font-bold uppercase tracking-wider mt-0.5">Classic • Level 1</p>
             </div>
+        </div>
 
-            <div class="w-full bg-slate-900/80 rounded-2xl p-4 border border-white/10 text-xs text-slate-300 space-y-2 text-left">
-                <div class="flex items-center gap-2">
-                    <span class="text-base">🔫</span>
-                    <span>Continuous automatic smooth movement & rhythmic shooting</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base">🎯</span>
-                    <span>Enemies advance, shoot back & various obstacles block your way</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base">⚡</span>
-                    <span>Pass gates (<b class="text-cyan-400">+5, +10, x2</b>) to instantly increase crowd size</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base">👹</span>
-                    <span>Giant Boss fights back with punches at the finish line!</span>
-                </div>
+        <div class="flex items-center gap-1.5 font-bold text-[11px]">
+            <div class="bg-gray-900/90 px-2 py-0.5 rounded-lg border border-gray-700/60 flex items-center gap-1">
+                <i class="fa-solid fa-trophy text-yellow-400 text-[10px]"></i>
+                <span id="scoreDisplay" class="text-yellow-400">0</span>
             </div>
-
-            <button id="start-btn" class="w-full py-4 btn-gradient rounded-2xl font-extrabold text-xl uppercase tracking-wider text-white shadow-xl cursor-pointer">
-                START SHOOTING 🚀
+            <div class="bg-gray-900/90 px-2 py-0.5 rounded-lg border border-gray-700/60 flex items-center gap-1">
+                <i class="fa-solid fa-clock text-emerald-400 text-[10px]"></i>
+                <span id="timerDisplay" class="text-emerald-400">00:00</span>
+            </div>
+            <button id="soundToggleBtn" class="p-1 bg-gray-900 hover:bg-gray-800 rounded-lg border border-gray-700 text-gray-300">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-[10px]"></i>
             </button>
         </div>
-    </div>
+    </header>
 
-    <!-- Game Over Screen -->
-    <div id="end-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-lg z-40 hidden flex items-center justify-center p-6 text-white text-center">
-        <div class="max-w-sm w-full glass-panel rounded-3xl p-8 flex flex-col items-center gap-6 border shadow-2xl">
-            <div id="end-icon" class="text-5xl animate-bounce">🏆</div>
-            <h2 id="end-title" class="text-3xl font-black tracking-wider">VICTORY!</h2>
-
-            <div class="w-full bg-slate-900/80 rounded-2xl p-4 border border-white/10 flex flex-col gap-3">
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-400">COINS COLLECTED</span>
-                    <span id="end-coins" class="text-xl font-bold text-amber-400">0 🪙</span>
-                </div>
-                <div class="w-full h-px bg-white/10"></div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-400">SCORE</span>
-                    <span id="end-score" class="text-xl font-black text-cyan-400">0</span>
-                </div>
-            </div>
-
-            <button id="restart-btn" class="w-full py-4 btn-gradient rounded-2xl font-extrabold text-xl uppercase tracking-wider text-white shadow-xl cursor-pointer">
-                PLAY AGAIN 🔄
-            </button>
+    <!-- Main Content Area: Category + Level Selector + 9:16 Canvas -->
+    <main class="w-full flex-1 flex flex-col items-center justify-center gap-1.5 max-w-sm min-h-0">
+        
+        <!-- Controls Bar -->
+        <div class="w-full grid grid-cols-2 gap-1.5 shrink-0">
+            <select id="categorySelect" class="bg-gray-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-[11px] font-bold text-emerald-300 focus:outline-none">
+                <option value="classic">🏆 Classic Puzzle</option>
+                <option value="shield">🛡️ Shield Dash</option>
+                <option value="monster">🐂 Monster Escape</option>
+                <option value="time">⚡ Time Attack</option>
+            </select>
+            <select id="levelSelect" class="bg-gray-900 border border-emerald-500/50 rounded-lg px-2 py-1 text-[11px] font-bold text-yellow-400 focus:outline-none">
+                <!-- Populated dynamically 1 to 20 -->
+            </select>
         </div>
-    </div>
 
-    <!-- Sound Audio Synthesizer -->
+        <!-- 9:16 Canvas Screen Container -->
+        <div class="shorts-container arcade-card p-1.5 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-xl flex items-center justify-center">
+            <canvas id="gameCanvas" class="w-full h-full rounded-xl bg-amber-950/20 cursor-grab active:cursor-grabbing"></canvas>
+
+            <!-- Interactive Game Overlay Screen -->
+            <div id="gameOverlay" class="absolute inset-0 bg-slate-950/92 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-20">
+                <div id="overlayIcon" class="text-5xl mb-1 animate-bounce">🐱</div>
+                <h2 id="overlayTitle" class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-yellow-400 mb-0.5">
+                    TOM'S GREEN MAZE
+                </h2>
+                <p id="overlaySubtitle" class="text-[11px] text-gray-300 max-w-xs mb-3 leading-tight">
+                    Choose the Safe Path or take the Guarded Path! Smoothly drag Tom to the Trophy.
+                </p>
+                <button id="startPlayBtn" class="px-6 py-2 rounded-xl font-black text-xs uppercase tracking-wider arcade-btn text-white flex items-center gap-1.5">
+                    Start Game <i class="fa-solid fa-play text-[10px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Control & Avatar Selector Bar -->
+        <div class="w-full flex items-center justify-between gap-1.5 shrink-0">
+            <button id="restartBtn" class="flex-1 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider arcade-btn text-white flex items-center justify-center gap-1">
+                <i class="fa-solid fa-rotate-right text-[10px]"></i> Restart
+            </button>
+            <div class="flex items-center gap-1" id="avatarPicker">
+                <button class="avatar-option px-2 py-0.5 rounded-lg bg-emerald-600/40 border-2 border-emerald-400 text-sm" data-avatar="tom">🐱</button>
+                <button class="avatar-option px-2 py-0.5 rounded-lg bg-gray-900 border border-gray-700 text-sm" data-avatar="jerry">🐭</button>
+                <button class="avatar-option px-2 py-0.5 rounded-lg bg-gray-900 border border-gray-700 text-sm" data-avatar="hero">🛡️</button>
+            </div>
+        </div>
+    </main>
+
     <script>
         class SoundEngine {
             constructor() {
-                this.initialized = false;
+                this.ctx = null;
+                this.enabled = true;
             }
-            async init() {
-                if (this.initialized) return;
-                await Tone.start();
-                this.synth = new Tone.Synth({
-                    oscillator: { type: "sawtooth" },
-                    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.02 }
-                }).toDestination();
-                this.synth.volume.value = -14;
-
-                this.polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
-                this.polySynth.volume.value = -10;
-
-                this.noiseSynth = new Tone.NoiseSynth({
-                    envelope: { attack: 0.001, decay: 0.08, sustain: 0 }
-                }).toDestination();
-                this.noiseSynth.volume.value = -18;
-                this.initialized = true;
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
             }
-            playShoot() {
-                if (!this.initialized) return;
-                this.synth.triggerAttackRelease("A4", "32n");
+            playTone(freq, type, duration, gainVal = 0.08) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
             }
-            playGate() {
-                if (!this.initialized) return;
-                this.polySynth.triggerAttackRelease(["E5", "G5", "B5"], "16n");
+            step() { this.playTone(280, 'triangle', 0.03, 0.02); }
+            collect() {
+                this.playTone(523.25, 'sine', 0.08, 0.1);
+                setTimeout(() => this.playTone(659.25, 'sine', 0.12, 0.1), 60);
             }
-            playCoin() {
-                if (!this.initialized) return;
-                this.synth.triggerAttackRelease("C6", "16n");
+            powerup() {
+                this.playTone(350, 'square', 0.08, 0.1);
+                setTimeout(() => this.playTone(500, 'square', 0.08, 0.1), 70);
+                setTimeout(() => this.playTone(700, 'square', 0.12, 0.1), 140);
             }
-            playHit() {
-                if (!this.initialized) return;
-                this.noiseSynth.triggerAttackRelease("16n");
-            }
-            playVictory() {
-                if (!this.initialized) return;
-                this.polySynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "8n");
-            }
-            playGameOver() {
-                if (!this.initialized) return;
-                this.polySynth.triggerAttackRelease(["F4", "D4", "B3"], "4n");
+            hit() { this.playTone(110, 'sawtooth', 0.3, 0.2); }
+            win() {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 'triangle', 0.2, 0.12), i * 90);
+                });
             }
         }
-        const soundFX = new SoundEngine();
-    </script>
 
-    <!-- Main Game Logic -->
-    <script>
-        const TRACK_WIDTH = 12;
-        const TRACK_LENGTH = 350;
+        const audio = new SoundEngine();
 
-        let scene, camera, renderer;
-        let playerGroup;
-        let bullets = [];
-        let enemyBullets = [];
-        let redMobs = [];
-        let gates = [];
-        let obstacles = [];
-        let bosses = [];
-        let coinPillars = [];
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-        let isRunning = false;
-        let isPaused = false;
-        let coins = 0;
-        let score = 0;
-        let mobSize = 44;
         let currentLevel = 1;
-        let maxLevels = 20;
+        let cols = 9;
+        let rows = 13;
+        let cellW = 30;
+        let cellH = 30;
+        let grid = [];
 
-        let playerX = 0;
-        let playerZ = 120;
-        let shootTimer = 0;
-        let shootInterval = 0.1;
+        let player = {
+            gridX: 1,
+            gridY: 1,
+            pixelX: 0,
+            pixelY: 0,
+            targetPixelX: 0,
+            targetPixelY: 0,
+            avatar: 'tom',
+            shielded: false,
+            shieldTime: 0
+        };
 
-        const clock = new THREE.Clock();
-        const keys = { left: false, right: false };
+        let goal = { x: 7, y: 11 };
+        let enemies = [];
+        let collectibles = [];
+        let score = 0;
+        let gameTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        let isGameOver = false;
+        let isDragging = false;
 
-        function init3D() {
-            const container = document.getElementById('canvas-container');
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x7dd3fc);
-            scene.fog = new THREE.FogExp2(0x7dd3fc, 0.005);
-
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
-            camera.position.set(0, 18, 140);
-            camera.lookAt(0, 2, 90);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            container.appendChild(renderer.domElement);
-
-            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambient);
-
-            const sun = new THREE.DirectionalLight(0xfffbeb, 1.1);
-            sun.position.set(30, 60, 30);
-            sun.castShadow = true;
-            scene.add(sun);
-
-            buildTrack();
-            buildShooterPlayer();
-            loadLevelData(currentLevel);
-
-            setupControls();
-            window.addEventListener('resize', onWindowResize);
-
-            renderer.setAnimationLoop(gameLoop);
+        const levelSelect = document.getElementById('levelSelect');
+        for (let l = 1; l <= 20; l++) {
+            const opt = document.createElement('option');
+            opt.value = l;
+            opt.innerText = `Level ${l} (${l <= 5 ? 'Easy' : l <= 12 ? 'Medium' : l <= 17 ? 'Hard' : 'Expert'})`;
+            levelSelect.appendChild(opt);
         }
 
-        function buildTrack() {
-            const roadGeo = new THREE.BoxGeometry(TRACK_WIDTH, 2, TRACK_LENGTH);
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3 });
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            road.position.set(0, -1, -50);
-            road.receiveShadow = true;
-            scene.add(road);
+        document.getElementById('soundToggleBtn').addEventListener('click', () => {
+            audio.enabled = !audio.enabled;
+            document.getElementById('soundIcon').className = audio.enabled ? 'fa-solid fa-volume-high text-[10px]' : 'fa-solid fa-volume-xmark text-red-400 text-[10px]';
+        });
 
-            const railGeo = new THREE.BoxGeometry(0.8, 1.2, TRACK_LENGTH);
-            const railMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
-            const railL = new THREE.Mesh(railGeo, railMat);
-            railL.position.set(-TRACK_WIDTH / 2 - 0.4, 0.6, -50);
-            const railR = new THREE.Mesh(railGeo, railMat);
-            railR.position.set(TRACK_WIDTH / 2 + 0.4, 0.6, -50);
-            scene.add(railL);
-            scene.add(railR);
-        }
+        function generateStrategicMaze(lvl) {
+            currentLevel = parseInt(lvl);
+            
+            if (currentLevel <= 5) { cols = 9; rows = 13; }
+            else if (currentLevel <= 12) { cols = 11; rows = 15; }
+            else if (currentLevel <= 17) { cols = 13; rows = 17; }
+            else { cols = 15; rows = 19; }
 
-        function buildShooterPlayer() {
-            playerGroup = new THREE.Group();
+            grid = Array(rows).fill(0).map(() => Array(cols).fill(1));
 
-            const matBlue = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
-            const matSkin = new THREE.MeshStandardMaterial({ color: 0xffd1b3 });
-            const matDark = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+            function carve(r, c) {
+                grid[r][c] = 0;
+                const dirs = [[-2, 0], [2, 0], [0, -2], [0, 2]].sort(() => Math.random() - 0.5);
+                dirs.forEach(([dr, dc]) => {
+                    const nr = r + dr, nc = c + dc;
+                    if (nr > 0 && nr < rows - 1 && nc > 0 && nc < cols - 1 && grid[nr][nc] === 1) {
+                        grid[r + dr / 2][c + dc / 2] = 0;
+                        carve(nr, nc);
+                    }
+                });
+            }
+            carve(1, 1);
 
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), matSkin);
-            head.position.y = 1.4;
-            head.castShadow = true;
-            playerGroup.add(head);
+            player.gridX = 1;
+            player.gridY = 1;
+            goal = { x: cols - 2, y: rows - 2 };
+            grid[goal.y][goal.x] = 0;
 
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.4, 1.0, 12), matBlue);
-            body.position.y = 0.7;
-            body.castShadow = true;
-            playerGroup.add(body);
-
-            const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.6, 8), matDark);
-            gunBarrel.rotation.x = Math.PI / 2;
-            gunBarrel.position.set(0.3, 0.8, -0.6);
-            playerGroup.add(gunBarrel);
-
-            const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.7), matDark);
-            gunBody.position.set(0.3, 0.7, -0.2);
-            playerGroup.add(gunBody);
-
-            playerGroup.position.set(0, 0, playerZ);
-            scene.add(playerGroup);
-        }
-
-        function clearLevelObjects() {
-            gates.forEach(g => scene.remove(g));
-            obstacles.forEach(o => scene.remove(o));
-            redMobs.forEach(r => scene.remove(r));
-            coinPillars.forEach(c => scene.remove(c));
-            bosses.forEach(b => scene.remove(b));
-            enemyBullets.forEach(eb => scene.remove(eb));
-            gates = [];
-            obstacles = [];
-            redMobs = [];
-            coinPillars = [];
-            bosses = [];
-            enemyBullets = [];
-        }
-
-        function loadLevelData(level) {
-            clearLevelObjects();
-
-            // Dynamic level features: Gates (+5, +10, x2)
-            createGate(-2, 80, '+5', 5, false);
-            createGate(2, 40, level % 2 === 0 ? 'x2' : '+10', level % 2 === 0 ? 2 : 10, level % 2 === 0);
-            createGate(0, -10, '+15', 15, false);
-
-            // Various road barriers & obstacles
-            let obsCount = Math.min(5, 2 + Math.floor(level / 4));
-            for (let i = 0; i < obsCount; i++) {
-                let ox = (i % 2 === 0 ? -2.8 : 2.8);
-                createObstacle(ox, 70 - (i * 25));
+            for (let r = 1; r < rows - 1; r += 2) {
+                if (r < rows - 2 && grid[r + 1][1] === 1) {
+                    grid[r + 1][1] = 0;
+                }
             }
 
-            createCoinCylinder(TRACK_WIDTH / 2 + 2.5, 50, 70);
+            enemies = [];
+            collectibles = [];
+            const enemyCount = Math.min(6, 1 + Math.floor(currentLevel / 3));
 
-            // Enemies advancing and shooting back
-            let enemyCount = 12 + (level * 2);
-            let enemySpeed = 1.0 + (level * 0.1);
-            createRedEnemies(0, 50, enemyCount, enemySpeed);
+            let pathAEnemyPlaced = 0;
+            for (let r = 3; r < rows - 2; r += 2) {
+                if (grid[r][1] === 0 && pathAEnemyPlaced < enemyCount) {
+                    enemies.push({ x: 1, y: r, type: pathAEnemyPlaced % 2 === 0 ? 'bull' : 'dog' });
+                    pathAEnemyPlaced++;
+                }
+            }
 
-            // Giant Golem Boss at finish line who punches back
-            let bossHp = 120 + (level * 30);
-            createGolemBoss(0, -130, bossHp);
+            let safeCells = [];
+            for (let r = 1; r < rows - 1; r++) {
+                for (let c = 2; c < cols - 1; c++) {
+                    if (grid[r][c] === 0 && !(c === goal.x && r === goal.y)) {
+                        safeCells.push({ x: c, y: r });
+                    }
+                }
+            }
 
-            document.getElementById('hud-level').innerText = level;
-            document.getElementById('hud-mob-count').innerText = mobSize;
+            if (safeCells.length > 0) {
+                const shieldPos = safeCells.splice(Math.floor(Math.random() * safeCells.length), 1)[0];
+                collectibles.push({ x: shieldPos.x, y: shieldPos.y, type: 'shield' });
+            }
+            for (let i = 0; i < 3 && safeCells.length > 0; i++) {
+                const cheesePos = safeCells.splice(Math.floor(Math.random() * safeCells.length), 1)[0];
+                collectibles.push({ x: cheesePos.x, y: cheesePos.y, type: 'cheese' });
+            }
         }
 
-        function createGate(x, z, labelText, factor, isMultiplier) {
-            const group = new THREE.Group();
-            const width = 5.5;
-            const height = 3.5;
+        function drawGreenMetallicBlock(x, y, w, h) {
+            const bx = x * w;
+            const by = y * h;
+            const bevelX = w * 0.18;
+            const bevelY = h * 0.18;
 
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a });
-            const topBar = new THREE.Mesh(new THREE.BoxGeometry(width, 0.5, 0.5), frameMat);
-            topBar.position.y = height;
-            group.add(topBar);
+            ctx.fillStyle = '#059669';
+            ctx.fillRect(bx, by, w, h);
 
-            const pillarL = new THREE.Mesh(new THREE.BoxGeometry(0.5, height, 0.5), frameMat);
-            pillarL.position.set(-width / 2 + 0.25, height / 2, 0);
-            const pillarR = new THREE.Mesh(new THREE.BoxGeometry(0.5, height, 0.5), frameMat);
-            pillarR.position.set(width / 2 - 0.25, height / 2, 0);
-            group.add(pillarL);
-            group.add(pillarR);
+            ctx.fillStyle = '#34d399';
+            ctx.beginPath();
+            ctx.moveTo(bx, by);
+            ctx.lineTo(bx + w, by);
+            ctx.lineTo(bx + w - bevelX, by + bevelY);
+            ctx.lineTo(bx + bevelX, by + bevelY);
+            ctx.lineTo(bx + bevelX, by + h - bevelY);
+            ctx.lineTo(bx, by + h);
+            ctx.fill();
 
-            const screen = new THREE.Mesh(
-                new THREE.PlaneGeometry(width - 0.6, height - 0.5),
-                new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
-            );
-            screen.position.y = height / 2;
-            group.add(screen);
+            ctx.fillStyle = '#064e3b';
+            ctx.beginPath();
+            ctx.moveTo(bx + w, by);
+            ctx.lineTo(bx + w, by + h);
+            ctx.lineTo(bx, by + h);
+            ctx.lineTo(bx + bevelX, by + h - bevelY);
+            ctx.lineTo(bx + w - bevelX, by + h - bevelY);
+            ctx.lineTo(bx + w - bevelX, by + bevelY);
+            ctx.fill();
 
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 80px Arial';
+            ctx.fillStyle = '#05070a';
+            ctx.fillRect(bx + bevelX, by + bevelY, w - bevelX * 2, h - bevelY * 2);
+
+            ctx.fillStyle = '#a7f3d0';
+            const rxDist = bevelX * 0.5;
+            const ryDist = bevelY * 0.5;
+            const rRad = Math.max(1.2, Math.min(w, h) * 0.05);
+            [
+                [bx + rxDist, by + ryDist],
+                [bx + w - rxDist, by + ryDist],
+                [bx + rxDist, by + h - ryDist],
+                [bx + w - rxDist, by + h - ryDist]
+            ].forEach(([rx, ry]) => {
+                ctx.beginPath();
+                ctx.arc(rx, ry, rRad, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawSquareTile(x, y, bgGrad, emoji, borderCol) {
+            const padX = cellW * 0.05;
+            const padY = cellH * 0.05;
+            const tx = x * cellW + padX;
+            const ty = y * cellH + padY;
+            const tw = cellW - padX * 2;
+            const th = cellH - padY * 2;
+
+            ctx.save();
+            ctx.fillStyle = bgGrad;
+            ctx.beginPath();
+            ctx.roundRect(tx, ty, tw, th, Math.min(tw, th) * 0.15);
+            ctx.fill();
+
+            if (borderCol) {
+                ctx.strokeStyle = borderCol;
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+            }
+
+            ctx.font = `bold ${Math.min(tw, th) * 0.68}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(labelText, 128, 64);
-
-            const textMesh = new THREE.Mesh(
-                new THREE.PlaneGeometry(3.5, 1.8),
-                new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true })
-            );
-            textMesh.position.set(0, height / 2, 0.1);
-            group.add(textMesh);
-
-            group.position.set(x, 0, z);
-            group.userData = { factor, isMultiplier, active: true };
-            scene.add(group);
-            gates.push(group);
+            ctx.fillText(emoji, tx + tw / 2, ty + th / 2 + 1);
+            ctx.restore();
         }
 
-        function createObstacle(x, z) {
-            const obsMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4 });
-            const obs = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 0.8), obsMat);
-            obs.position.set(x, 0.7, z);
-            obs.castShadow = true;
-            scene.add(obs);
-            obstacles.push(obs);
-        }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        function createCoinCylinder(x, z, coinAmount) {
-            const group = new THREE.Group();
-            const glass = new THREE.Mesh(
-                new THREE.CylinderGeometry(1.6, 1.6, 7, 24),
-                new THREE.MeshPhysicalMaterial({ color: 0xfef08a, transparent: true, opacity: 0.5, transmission: 0.8 })
+            const bgGrad = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 30,
+                canvas.width / 2, canvas.height / 2, canvas.height / 1.1
             );
-            glass.position.y = 3.5;
-            group.add(glass);
+            bgGrad.addColorStop(0, '#eab308');
+            bgGrad.addColorStop(0.6, '#ca8a04');
+            bgGrad.addColorStop(1, '#61360c');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 });
-            for (let y = 0.8; y < 6.5; y += 0.5) {
-                const coin = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.3, 16), coinMat);
-                coin.position.y = y;
-                group.add(coin);
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (grid[r][c] === 1) {
+                        drawGreenMetallicBlock(c, r, cellW, cellH);
+                    }
+                }
             }
 
-            group.position.set(x, 0, z);
-            group.userData = { coins: coinAmount, active: true };
-            scene.add(group);
-            coinPillars.push(group);
+            collectibles.forEach(item => {
+                const grad = ctx.createLinearGradient(0, 0, cellW, cellH);
+                if (item.type === 'shield') {
+                    grad.addColorStop(0, '#3b82f6');
+                    grad.addColorStop(1, '#1d4ed8');
+                    drawSquareTile(item.x, item.y, grad, '🛡️', '#93c5fd');
+                } else {
+                    grad.addColorStop(0, '#facc15');
+                    grad.addColorStop(1, '#ca8a04');
+                    drawSquareTile(item.x, item.y, grad, '🧀', '#fef08a');
+                }
+            });
+
+            const goalGrad = ctx.createLinearGradient(0, 0, cellW, cellH);
+            goalGrad.addColorStop(0, '#10b981');
+            goalGrad.addColorStop(1, '#047857');
+            drawSquareTile(goal.x, goal.y, goalGrad, '🏆', '#a7f3d0');
+
+            enemies.forEach(enemy => {
+                const eGrad = ctx.createLinearGradient(0, 0, cellW, cellH);
+                eGrad.addColorStop(0, '#ef4444');
+                eGrad.addColorStop(1, '#991b1b');
+                drawSquareTile(enemy.x, enemy.y, eGrad, enemy.type === 'bull' ? '🐂' : '🐕', '#fca5a5');
+            });
+
+            player.pixelX += (player.targetPixelX - player.pixelX) * 0.45;
+            player.pixelY += (player.targetPixelY - player.pixelY) * 0.45;
+
+            const pGrad = ctx.createLinearGradient(0, 0, cellW, cellH);
+            pGrad.addColorStop(0, '#38bdf8');
+            pGrad.addColorStop(1, '#0284c7');
+
+            let icon = '🐱';
+            if (player.avatar === 'jerry') icon = '🐭';
+            if (player.avatar === 'hero') icon = '🦸';
+
+            const padX = cellW * 0.05;
+            const padY = cellH * 0.05;
+            const tx = player.pixelX + padX;
+            const ty = player.pixelY + padY;
+            const tw = cellW - padX * 2;
+            const th = cellH - padY * 2;
+
+            ctx.save();
+            ctx.fillStyle = pGrad;
+            ctx.beginPath();
+            ctx.roundRect(tx, ty, tw, th, Math.min(tw, th) * 0.15);
+            ctx.fill();
+
+            ctx.strokeStyle = player.shielded ? '#facc15' : '#e0f2fe';
+            ctx.lineWidth = player.shielded ? 3 : 2;
+            ctx.stroke();
+
+            ctx.font = `bold ${Math.min(tw, th) * 0.7}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, tx + tw / 2, ty + th / 2 + 1);
+            ctx.restore();
         }
 
-        function createRedEnemies(centerX, centerZ, count, speed) {
-            const matRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
-            const matGun = new THREE.MeshStandardMaterial({ color: 0x111827 });
-            for (let i = 0; i < count; i++) {
-                const group = new THREE.Group();
-                const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), matRed);
-                head.position.y = 1.1;
-                group.add(head);
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            cellW = canvas.width / cols;
+            cellH = canvas.height / rows;
 
-                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 0.8, 12), matRed);
-                body.position.y = 0.55;
-                group.add(body);
+            player.pixelX = player.gridX * cellW;
+            player.pixelY = player.gridY * cellH;
+            player.targetPixelX = player.pixelX;
+            player.targetPixelY = player.pixelY;
+            draw();
+        }
 
-                const eGun = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.5), matGun);
-                eGun.position.set(0.2, 0.6, 0.3);
-                group.add(eGun);
+        function tryMoveTo(gx, gy) {
+            if (!isRunning || isGameOver) return;
+            if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
+                if (grid[gy][gx] === 0) {
+                    if (player.gridX !== gx || player.gridY !== gy) {
+                        audio.step();
+                    }
+                    player.gridX = gx;
+                    player.gridY = gy;
+                    player.targetPixelX = gx * cellW;
+                    player.targetPixelY = gy * cellH;
 
-                const offsetX = (Math.random() - 0.5) * 6;
-                const offsetZ = (Math.random() - 0.5) * 20;
-                group.position.set(centerX + offsetX, 0, centerZ + offsetZ);
-                group.userData = { speed: speed + (Math.random() * 0.4), shootCooldown: Math.random() * 3 };
-                scene.add(group);
-                redMobs.push(group);
+                    for (let i = collectibles.length - 1; i >= 0; i--) {
+                        if (collectibles[i].x === player.gridX && collectibles[i].y === player.gridY) {
+                            const item = collectibles[i];
+                            if (item.type === 'cheese') {
+                                score += 200;
+                                audio.collect();
+                            } else if (item.type === 'shield') {
+                                player.shielded = true;
+                                player.shieldTime = Date.now() + 6000;
+                                audio.powerup();
+                            }
+                            collectibles.splice(i, 1);
+                            updateHUD();
+                        }
+                    }
+
+                    if (player.gridX === goal.x && player.gridY === goal.y) {
+                        handleWin();
+                    }
+
+                    checkEnemyCollision();
+                }
             }
         }
 
-        function createGolemBoss(x, z, hp) {
-            const group = new THREE.Group();
-            const matBoss = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4 });
+        function handlePointerMove(e) {
+            if (!isDragging || !isRunning || isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const pointerX = e.clientX - rect.left;
+            const pointerY = e.clientY - rect.top;
 
-            const torso = new THREE.Mesh(new THREE.DodecahedronGeometry(2.8, 1), matBoss);
-            torso.position.y = 3.5;
-            group.add(torso);
+            const targetGridX = Math.floor(pointerX / cellW);
+            const targetGridY = Math.floor(pointerY / cellH);
 
-            // Giant Arms for hand-to-hand combat
-            const armMat = new THREE.MeshStandardMaterial({ color: 0xca8a04 });
-            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.5, 0.8), armMat);
-            leftArm.position.set(-2.0, 3.2, 0);
-            group.add(leftArm);
+            if (targetGridX !== player.gridX || targetGridY !== player.gridY) {
+                const dx = Math.sign(targetGridX - player.gridX);
+                const dy = Math.sign(targetGridY - player.gridY);
 
-            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.5, 0.8), armMat);
-            rightArm.position.set(2.0, 3.2, 0);
-            group.add(rightArm);
-
-            const crown = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1.8, 5), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-            crown.position.set(0, 6.2, 0);
-            group.add(crown);
-
-            const hpBack = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 0.8), new THREE.MeshBasicMaterial({ color: 0x0f172a }));
-            hpBack.position.set(0, 8.2, 0);
-            group.add(hpBack);
-
-            const hpBar = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-            hpBar.position.set(0, 8.2, 0.05);
-            group.add(hpBar);
-
-            group.position.set(x, 0, z);
-            group.userData = { maxHp: hp, currentHp: hp, hpBarMesh: hpBar, leftArm, rightArm, punchTimer: 0 };
-            scene.add(group);
-            bosses.push(group);
+                if (dx !== 0 && grid[player.gridY][player.gridX + dx] === 0) {
+                    tryMoveTo(player.gridX + dx, player.gridY);
+                } else if (dy !== 0 && grid[player.gridY + dy][player.gridX] === 0) {
+                    tryMoveTo(player.gridX, player.gridY + dy);
+                }
+            }
         }
 
-        function spawnBullet(xPos, zPos) {
-            const bulletGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8);
-            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-            const bullet = new THREE.Mesh(bulletGeo, bulletMat);
-            bullet.rotation.x = Math.PI / 2;
-            bullet.position.set(xPos, 0.9, zPos);
-            scene.add(bullet);
-            bullets.push(bullet);
-        }
+        canvas.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            canvas.setPointerCapture(e.pointerId);
+            handlePointerMove(e);
+        });
+        canvas.addEventListener('pointermove', handlePointerMove);
+        canvas.addEventListener('pointerup', (e) => {
+            isDragging = false;
+            try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+        });
+        canvas.addEventListener('pointercancel', () => { isDragging = false; });
 
-        function spawnEnemyBullet(xPos, zPos) {
-            const bulletGeo = new THREE.SphereGeometry(0.15, 8, 8);
-            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-            const bullet = new THREE.Mesh(bulletGeo, bulletMat);
-            bullet.position.set(xPos, 1.0, zPos);
-            scene.add(bullet);
-            enemyBullets.push(bullet);
-        }
+        function updateEnemies() {
+            if (!isRunning || isGameOver) return;
+            enemies.forEach(enemy => {
+                const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => {
+                    const nx = enemy.x + dx, ny = enemy.y + dy;
+                    return nx >= 0 && nx < cols && ny >= 0 && ny < rows && grid[ny][nx] === 0 && !(nx === goal.x && ny === goal.y);
+                });
 
-        function setupControls() {
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
-                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+                if (dirs.length > 0) {
+                    const chosen = dirs[Math.floor(Math.random() * dirs.length)];
+                    enemy.x += chosen[0];
+                    enemy.y += chosen[1];
+                }
             });
-            window.addEventListener('keyup', (e) => {
-                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
-                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
-            });
-
-            let isDragging = false;
-            let lastX = 0;
-            const onDown = (e) => {
-                if (!isRunning || isPaused) return;
-                isDragging = true;
-                lastX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
-            };
-            const onMove = (e) => {
-                if (!isDragging) return;
-                const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
-                playerX += (currentX - lastX) * 0.04;
-                playerX = Math.max(-TRACK_WIDTH / 2 + 1, Math.min(TRACK_WIDTH / 2 - 1, playerX));
-                lastX = currentX;
-            };
-            const onUp = () => { isDragging = false; };
-
-            window.addEventListener('mousedown', onDown);
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-            window.addEventListener('touchstart', onDown);
-            window.addEventListener('touchmove', onMove);
-            window.addEventListener('touchend', onUp);
-
-            document.getElementById('start-btn').addEventListener('click', startGame);
-            document.getElementById('restart-btn').addEventListener('click', startGame);
-            document.getElementById('pause-btn').addEventListener('click', togglePause);
+            checkEnemyCollision();
         }
 
-        async function startGame() {
-            await soundFX.init();
-            coins = 0;
+        function checkEnemyCollision() {
+            if (player.shieldTime && Date.now() > player.shieldTime) {
+                player.shielded = false;
+            }
+
+            enemies.forEach(enemy => {
+                if (enemy.x === player.gridX && enemy.y === player.gridY) {
+                    if (player.shielded) {
+                        audio.powerup();
+                        player.shielded = false;
+                        enemy.x = goal.x;
+                        enemy.y = goal.y;
+                    } else {
+                        handleGameOver();
+                    }
+                }
+            });
+        }
+
+        function updateHUD() {
+            document.getElementById('scoreDisplay').innerText = score;
+            const mins = Math.floor(gameTime / 60).toString().padStart(2, '0');
+            const secs = (gameTime % 60).toString().padStart(2, '0');
+            document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
+        }
+
+        function startGame() {
+            const lvl = document.getElementById('levelSelect').value;
+            const cat = document.getElementById('categorySelect').value;
+            
+            document.getElementById('modeBadge').innerText = `${cat.toUpperCase()} • LEVEL ${lvl}`;
+
+            generateStrategicMaze(lvl);
             score = 0;
-            mobSize = 44;
-            currentLevel = 1;
-            playerX = 0;
-            playerZ = 120;
+            gameTime = 0;
             isRunning = true;
-            isPaused = false;
+            isGameOver = false;
 
-            bullets.forEach(b => scene.remove(b));
-            enemyBullets.forEach(eb => scene.remove(eb));
-            bullets = [];
-            enemyBullets = [];
+            document.getElementById('gameOverlay').classList.add('hidden');
 
-            loadLevelData(currentLevel);
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isRunning) {
+                    gameTime++;
+                    updateHUD();
+                    if (gameTime % 2 === 0) updateEnemies();
+                }
+            }, 1000);
 
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('end-screen').classList.add('hidden');
-            document.getElementById('hud-coins').innerText = '0';
-            clock.start();
+            resizeCanvas();
+            updateHUD();
         }
 
-        function togglePause() {
-            if (!isRunning) return;
-            isPaused = !isPaused;
-            document.getElementById('pause-btn').innerText = isPaused ? '▶️' : '⏸️';
-        }
-
-        function triggerGameOver(victory = false) {
+        function handleWin() {
             isRunning = false;
-            if (victory) {
-                soundFX.playVictory();
-                document.getElementById('end-title').innerText = currentLevel >= maxLevels ? "GAME COMPLETE! 🏆" : `LEVEL ${currentLevel} CLEARED! 🎉`;
-                document.getElementById('end-title').className = "text-3xl font-black text-emerald-400 tracking-wider";
-            } else {
-                soundFX.playGameOver();
-                document.getElementById('end-title').innerText = "DEFEAT! ❌";
-                document.getElementById('end-title').className = "text-3xl font-black text-rose-500 tracking-wider";
+            audio.win();
+            score += Math.max(100, 1000 - gameTime * 15);
+            updateHUD();
+
+            const overlay = document.getElementById('gameOverlay');
+            document.getElementById('overlayIcon').innerText = '🏆';
+            document.getElementById('overlayTitle').innerText = `LEVEL ${currentLevel} CLEARED!`;
+            document.getElementById('overlaySubtitle').innerText = `You reached the Trophy! Score: ${score} pts in ${gameTime}s.`;
+            document.getElementById('startPlayBtn').innerText = currentLevel < 20 ? 'Next Level ➔' : 'Replay Level 1';
+            overlay.classList.remove('hidden');
+
+            if (currentLevel < 20) {
+                document.getElementById('levelSelect').value = currentLevel + 1;
             }
-            document.getElementById('end-coins').innerText = `${coins} 🪙`;
-            document.getElementById('end-score').innerText = score;
-            document.getElementById('end-screen').classList.remove('hidden');
+        }
+
+        function handleGameOver() {
+            isRunning = false;
+            isGameOver = true;
+            audio.hit();
+
+            const overlay = document.getElementById('gameOverlay');
+            document.getElementById('overlayIcon').innerText = '💥';
+            document.getElementById('overlayTitle').innerText = 'GAME OVER!';
+            document.getElementById('overlaySubtitle').innerText = 'An enemy caught you! Click Try Again to restart this level.';
+            document.getElementById('startPlayBtn').innerText = 'Try Again';
+            overlay.classList.remove('hidden');
         }
 
         function gameLoop() {
-            const delta = clock.getDelta();
-
-            if (isRunning && !isPaused) {
-                if (keys.left) playerX -= 12 * delta;
-                if (keys.right) playerX += 12 * delta;
-                playerX = Math.max(-TRACK_WIDTH / 2 + 1, Math.min(TRACK_WIDTH / 2 - 1, playerX));
-                
-                // Continuous smooth forward movement
-                playerZ -= 6 * delta;
-                playerGroup.position.set(playerX, 0, playerZ);
-
-                camera.position.set(playerX * 0.5, 18, playerZ + 20);
-                camera.lookAt(playerX * 0.5, 2, playerZ - 20);
-
-                shootTimer += delta;
-                if (shootTimer >= shootInterval) {
-                    shootTimer = 0;
-                    spawnBullet(playerX + 0.3, playerZ - 0.8);
-                    soundFX.playShoot();
-                }
-
-                // Player Bullets update & collisions
-                for (let i = bullets.length - 1; i >= 0; i--) {
-                    const b = bullets[i];
-                    b.position.z -= 45 * delta;
-
-                    // Gates (+5, +10, x2)
-                    gates.forEach(gate => {
-                        if (gate.userData.active && Math.abs(b.position.z - gate.position.z) < 1.0) {
-                            if (Math.abs(b.position.x - gate.position.x) < 2.5) {
-                                gate.userData.active = false;
-                                soundFX.playGate();
-                                if (gate.userData.isMultiplier) {
-                                    mobSize = Math.floor(mobSize * gate.userData.factor);
-                                } else {
-                                    mobSize += gate.userData.factor;
-                                }
-                                document.getElementById('hud-mob-count').innerText = mobSize;
-                            }
-                        }
-                    });
-
-                    // Coin Cylinders
-                    coinPillars.forEach(cp => {
-                        if (cp.userData.active && Math.abs(b.position.z - cp.position.z) < 1.5) {
-                            if (Math.abs(b.position.x - cp.position.x) < 2.0) {
-                                cp.userData.active = false;
-                                soundFX.playCoin();
-                                coins += cp.userData.coins;
-                                score += 200;
-                                document.getElementById('hud-coins').innerText = coins;
-                                scene.remove(cp);
-                            }
-                        }
-                    });
-
-                    // Bullet vs Red Enemy
-                    for (let r = redMobs.length - 1; r >= 0; r--) {
-                        const red = redMobs[r];
-                        if (b.position.distanceTo(red.position) < 0.9) {
-                            soundFX.playHit();
-                            score += 10;
-                            scene.remove(b);
-                            scene.remove(red);
-                            bullets.splice(i, 1);
-                            redMobs.splice(r, 1);
-                            break;
-                        }
-                    }
-
-                    // Bullet vs Giant Golem Boss (Boss takes damage from distance)
-                    bosses.forEach(boss => {
-                        if (boss.userData.currentHp > 0 && b.position.distanceTo(boss.position) < 4.0) {
-                            soundFX.playHit();
-                            boss.userData.currentHp -= 1;
-                            boss.userData.hpBarMesh.scale.x = Math.max(0, boss.userData.currentHp / boss.userData.maxHp);
-                            scene.remove(b);
-                            bullets.splice(i, 1);
-
-                            if (boss.userData.currentHp <= 0) {
-                                scene.remove(boss);
-                                coins += 150;
-                                score += 1000;
-                                
-                                if (currentLevel < maxLevels) {
-                                    currentLevel++;
-                                    soundFX.playVictory();
-                                    loadLevelData(currentLevel);
-                                    playerZ = 120;
-                                } else {
-                                    triggerGameOver(true);
-                                }
-                            }
-                        }
-                    });
-
-                    if (b && b.position.z < playerZ - 120) {
-                        scene.remove(b);
-                        bullets.splice(i, 1);
-                    }
-                }
-
-                // Enemy Bullets movement & collision with player
-                for (let i = enemyBullets.length - 1; i >= 0; i--) {
-                    let eb = enemyBullets[i];
-                    eb.position.z += 25 * delta;
-
-                    if (playerGroup.position.distanceTo(eb.position) < 1.0) {
-                        scene.remove(eb);
-                        enemyBullets.splice(i, 1);
-                        mobSize -= 2;
-                        document.getElementById('hud-mob-count').innerText = Math.max(0, mobSize);
-                        soundFX.playHit();
-                        if (mobSize <= 0) {
-                            triggerGameOver(false);
-                        }
-                        continue;
-                    }
-
-                    if (eb.position.z > playerZ + 10) {
-                        scene.remove(eb);
-                        enemyBullets.splice(i, 1);
-                    }
-                }
-
-                // Enemies advancing, shooting back & tracking player
-                redMobs.forEach(red => {
-                    red.position.z += red.userData.speed * delta;
-                    if (red.position.x < playerX) red.position.x += 0.6 * delta;
-                    else red.position.x -= 0.6 * delta;
-
-                    // Enemies shoot bullets towards player periodically
-                    red.userData.shootCooldown -= delta;
-                    if (red.userData.shootCooldown <= 0 && red.position.z < playerZ) {
-                        red.userData.shootCooldown = 2.0 + Math.random() * 2.0;
-                        spawnEnemyBullet(red.position.x, red.position.z);
-                    }
-
-                    if (playerGroup.position.distanceTo(red.position) < 1.1) {
-                        triggerGameOver(false);
-                    }
-                });
-
-                // Boss hand-to-hand combat when player reaches close proximity
-                bosses.forEach(boss => {
-                    if (boss.userData.currentHp > 0) {
-                        // Boss punches back with hands when close
-                        boss.userData.punchTimer += delta * 5;
-                        boss.userData.leftArm.rotation.x = Math.sin(boss.userData.punchTimer) * 0.8;
-                        boss.userData.rightArm.rotation.x = -Math.sin(boss.userData.punchTimer) * 0.8;
-
-                        if (playerGroup.position.distanceTo(boss.position) < 4.5) {
-                            mobSize -= 1 * delta * 20; // Hand-to-hand damage
-                            document.getElementById('hud-mob-count').innerText = Math.max(0, Math.floor(mobSize));
-                            if (mobSize <= 0) triggerGameOver(false);
-                        }
-                    }
-                });
-
-                // Obstacles collision check
-                obstacles.forEach(obs => {
-                    if (playerGroup.position.distanceTo(obs.position) < 1.3) {
-                        triggerGameOver(false);
-                    }
-                });
+            if (isRunning) {
+                draw();
             }
-
-            renderer.render(scene, camera);
+            requestAnimationFrame(gameLoop);
         }
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'KeyW'].includes(e.code)) tryMoveTo(player.gridX, player.gridY - 1);
+            if (['ArrowDown', 'KeyS'].includes(e.code)) tryMoveTo(player.gridX, player.gridY + 1);
+            if (['ArrowLeft', 'KeyA'].includes(e.code)) tryMoveTo(player.gridX - 1, player.gridY);
+            if (['ArrowRight', 'KeyD'].includes(e.code)) tryMoveTo(player.gridX + 1, player.gridY);
+        });
 
-        window.onload = init3D;
+        document.querySelectorAll('.avatar-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.avatar-option').forEach(b => {
+                    b.classList.remove('bg-emerald-600/40', 'border-2', 'border-emerald-400');
+                    b.classList.add('bg-gray-900', 'border-gray-700');
+                });
+                btn.classList.remove('bg-gray-900', 'border-gray-700');
+                btn.classList.add('bg-emerald-600/40', 'border-2', 'border-emerald-400');
+                player.avatar = btn.dataset.avatar;
+                draw();
+            });
+        });
+
+        document.getElementById('startPlayBtn').addEventListener('click', () => {
+            audio.init();
+            startGame();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => startGame());
+        document.getElementById('categorySelect').addEventListener('change', () => startGame());
+        document.getElementById('levelSelect').addEventListener('change', () => startGame());
+
+        window.addEventListener('resize', resizeCanvas);
+
+        window.onload = () => {
+            generateStrategicMaze(1);
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        };
     </script>
 </body>
 </html>
