@@ -59,7 +59,7 @@
                 <span id="hud-coins" class="text-2xl font-black text-amber-300 hud-shadow">0</span>
             </div>
 
-            <!-- Level & Mob / Crowd Size -->
+            <!-- Level & Crowd Size -->
             <div class="flex gap-2">
                 <div class="glass-panel px-4 py-2 rounded-2xl flex flex-col items-center">
                     <span class="text-[10px] text-amber-400 font-bold tracking-widest uppercase">LEVEL</span>
@@ -92,25 +92,25 @@
                 <h1 class="text-3xl md:text-4xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
                     3D RIFLE SHOOTER
                 </h1>
-                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Levels 1 to 20 • Golem Clash</p>
+                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Levels 1 to 20 • Boss Hand-to-Hand Combat</p>
             </div>
 
             <div class="w-full bg-slate-900/80 rounded-2xl p-4 border border-white/10 text-xs text-slate-300 space-y-2 text-left">
                 <div class="flex items-center gap-2">
                     <span class="text-base">🔫</span>
-                    <span>Continuous automatic smooth movement & shooting</span>
+                    <span>Continuous automatic smooth movement & rhythmic shooting</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-base">🎯</span>
-                    <span>Enemies advance slowly towards you with guns!</span>
+                    <span>Enemies advance, shoot back & various obstacles block your way</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-base">⚡</span>
-                    <span>Pass gates (<b class="text-cyan-400">+5, x2, x3</b>) to grow crowd size</span>
+                    <span>Pass gates (<b class="text-cyan-400">+5, +10, x2</b>) to instantly increase crowd size</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-base">👹</span>
-                    <span>Defeat the Giant Golem Boss in 20 progressive levels!</span>
+                    <span>Giant Boss fights back with punches at the finish line!</span>
                 </div>
             </div>
 
@@ -204,6 +204,7 @@
         let scene, camera, renderer;
         let playerGroup;
         let bullets = [];
+        let enemyBullets = [];
         let redMobs = [];
         let gates = [];
         let obstacles = [];
@@ -315,38 +316,39 @@
             redMobs.forEach(r => scene.remove(r));
             coinPillars.forEach(c => scene.remove(c));
             bosses.forEach(b => scene.remove(b));
+            enemyBullets.forEach(eb => scene.remove(eb));
             gates = [];
             obstacles = [];
             redMobs = [];
             coinPillars = [];
             bosses = [];
+            enemyBullets = [];
         }
 
         function loadLevelData(level) {
             clearLevelObjects();
 
-            // Progressive difficulty based on level (1 to 20)
-            let gateType = level % 2 === 0 ? 'x2' : 'x3';
+            // Dynamic level features: Gates (+5, +10, x2)
             createGate(-2, 80, '+5', 5, false);
-            createGate(2, 40, gateType, level % 2 === 0 ? 2 : 3, true);
-            createGate(0, -10, '+10', 10, false);
+            createGate(2, 40, level % 2 === 0 ? 'x2' : '+10', level % 2 === 0 ? 2 : 10, level % 2 === 0);
+            createGate(0, -10, '+15', 15, false);
 
-            // Level specific obstacles & barriers
-            let obsCount = Math.min(4, 1 + Math.floor(level / 5));
+            // Various road barriers & obstacles
+            let obsCount = Math.min(5, 2 + Math.floor(level / 4));
             for (let i = 0; i < obsCount; i++) {
-                let ox = (i % 2 === 0 ? -2.5 : 2.5);
-                createObstacle(ox, 60 - (i * 30));
+                let ox = (i % 2 === 0 ? -2.8 : 2.8);
+                createObstacle(ox, 70 - (i * 25));
             }
 
             createCoinCylinder(TRACK_WIDTH / 2 + 2.5, 50, 70);
 
-            // Progressive Red Enemies with advancing speed
-            let enemyCount = 15 + (level * 3);
-            let enemySpeed = 1.2 + (level * 0.15); // Level-based advance speed
+            // Enemies advancing and shooting back
+            let enemyCount = 12 + (level * 2);
+            let enemySpeed = 1.0 + (level * 0.1);
             createRedEnemies(0, 50, enemyCount, enemySpeed);
 
-            // Giant Golem Boss with scaled HP
-            let bossHp = 100 + (level * 25);
+            // Giant Golem Boss at finish line who punches back
+            let bossHp = 120 + (level * 30);
             createGolemBoss(0, -130, bossHp);
 
             document.getElementById('hud-level').innerText = level;
@@ -444,15 +446,14 @@
                 body.position.y = 0.55;
                 group.add(body);
 
-                // Small gun held by enemy
                 const eGun = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.5), matGun);
                 eGun.position.set(0.2, 0.6, 0.3);
                 group.add(eGun);
 
                 const offsetX = (Math.random() - 0.5) * 6;
-                const offsetZ = (Math.random() - 0.5) * 15;
+                const offsetZ = (Math.random() - 0.5) * 20;
                 group.position.set(centerX + offsetX, 0, centerZ + offsetZ);
-                group.userData = { speed: speed + (Math.random() * 0.4) };
+                group.userData = { speed: speed + (Math.random() * 0.4), shootCooldown: Math.random() * 3 };
                 scene.add(group);
                 redMobs.push(group);
             }
@@ -466,20 +467,30 @@
             torso.position.y = 3.5;
             group.add(torso);
 
+            // Giant Arms for hand-to-hand combat
+            const armMat = new THREE.MeshStandardMaterial({ color: 0xca8a04 });
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.5, 0.8), armMat);
+            leftArm.position.set(-2.0, 3.2, 0);
+            group.add(leftArm);
+
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.5, 0.8), armMat);
+            rightArm.position.set(2.0, 3.2, 0);
+            group.add(rightArm);
+
             const crown = new THREE.Mesh(new THREE.ConeGeometry(1.4, 1.8, 5), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-            crown.position.set(0, 6.0, 0);
+            crown.position.set(0, 6.2, 0);
             group.add(crown);
 
             const hpBack = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 0.8), new THREE.MeshBasicMaterial({ color: 0x0f172a }));
-            hpBack.position.set(0, 8.0, 0);
+            hpBack.position.set(0, 8.2, 0);
             group.add(hpBack);
 
             const hpBar = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.6), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-            hpBar.position.set(0, 8.0, 0.05);
+            hpBar.position.set(0, 8.2, 0.05);
             group.add(hpBar);
 
             group.position.set(x, 0, z);
-            group.userData = { maxHp: hp, currentHp: hp, hpBarMesh: hpBar };
+            group.userData = { maxHp: hp, currentHp: hp, hpBarMesh: hpBar, leftArm, rightArm, punchTimer: 0 };
             scene.add(group);
             bosses.push(group);
         }
@@ -489,9 +500,18 @@
             const bulletMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
             const bullet = new THREE.Mesh(bulletGeo, bulletMat);
             bullet.rotation.x = Math.PI / 2;
-            bullet.position.set(xPos, 0.7, zPos);
+            bullet.position.set(xPos, 0.9, zPos);
             scene.add(bullet);
             bullets.push(bullet);
+        }
+
+        function spawnEnemyBullet(xPos, zPos) {
+            const bulletGeo = new THREE.SphereGeometry(0.15, 8, 8);
+            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+            bullet.position.set(xPos, 1.0, zPos);
+            scene.add(bullet);
+            enemyBullets.push(bullet);
         }
 
         function setupControls() {
@@ -544,7 +564,9 @@
             isPaused = false;
 
             bullets.forEach(b => scene.remove(b));
+            enemyBullets.forEach(eb => scene.remove(eb));
             bullets = [];
+            enemyBullets = [];
 
             loadLevelData(currentLevel);
 
@@ -584,7 +606,7 @@
                 if (keys.right) playerX += 12 * delta;
                 playerX = Math.max(-TRACK_WIDTH / 2 + 1, Math.min(TRACK_WIDTH / 2 - 1, playerX));
                 
-                // Unstoppable continuous smooth forward movement
+                // Continuous smooth forward movement
                 playerZ -= 6 * delta;
                 playerGroup.position.set(playerX, 0, playerZ);
 
@@ -598,12 +620,12 @@
                     soundFX.playShoot();
                 }
 
-                // Bullets movement & collision
+                // Player Bullets update & collisions
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const b = bullets[i];
                     b.position.z -= 45 * delta;
 
-                    // Multiplier Gates
+                    // Gates (+5, +10, x2)
                     gates.forEach(gate => {
                         if (gate.userData.active && Math.abs(b.position.z - gate.position.z) < 1.0) {
                             if (Math.abs(b.position.x - gate.position.x) < 2.5) {
@@ -647,9 +669,9 @@
                         }
                     }
 
-                    // Bullet vs Golem Boss
+                    // Bullet vs Giant Golem Boss (Boss takes damage from distance)
                     bosses.forEach(boss => {
-                        if (boss.userData.currentHp > 0 && b.position.distanceTo(boss.position) < 3.5) {
+                        if (boss.userData.currentHp > 0 && b.position.distanceTo(boss.position) < 4.0) {
                             soundFX.playHit();
                             boss.userData.currentHp -= 1;
                             boss.userData.hpBarMesh.scale.x = Math.max(0, boss.userData.currentHp / boss.userData.maxHp);
@@ -665,7 +687,7 @@
                                     currentLevel++;
                                     soundFX.playVictory();
                                     loadLevelData(currentLevel);
-                                    playerZ = 120; // reset track position for next level
+                                    playerZ = 120;
                                 } else {
                                     triggerGameOver(true);
                                 }
@@ -679,16 +701,60 @@
                     }
                 }
 
-                // Enemies slowly advancing towards the player with guns
+                // Enemy Bullets movement & collision with player
+                for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                    let eb = enemyBullets[i];
+                    eb.position.z += 25 * delta;
+
+                    if (playerGroup.position.distanceTo(eb.position) < 1.0) {
+                        scene.remove(eb);
+                        enemyBullets.splice(i, 1);
+                        mobSize -= 2;
+                        document.getElementById('hud-mob-count').innerText = Math.max(0, mobSize);
+                        soundFX.playHit();
+                        if (mobSize <= 0) {
+                            triggerGameOver(false);
+                        }
+                        continue;
+                    }
+
+                    if (eb.position.z > playerZ + 10) {
+                        scene.remove(eb);
+                        enemyBullets.splice(i, 1);
+                    }
+                }
+
+                // Enemies advancing, shooting back & tracking player
                 redMobs.forEach(red => {
                     red.position.z += red.userData.speed * delta;
-                    // Slight tracking towards player X position
-                    if (red.position.x < playerX) red.position.x += 0.5 * delta;
-                    else red.position.x -= 0.5 * delta;
+                    if (red.position.x < playerX) red.position.x += 0.6 * delta;
+                    else red.position.x -= 0.6 * delta;
 
-                    // Player vs Enemy collision (Game Over)
+                    // Enemies shoot bullets towards player periodically
+                    red.userData.shootCooldown -= delta;
+                    if (red.userData.shootCooldown <= 0 && red.position.z < playerZ) {
+                        red.userData.shootCooldown = 2.0 + Math.random() * 2.0;
+                        spawnEnemyBullet(red.position.x, red.position.z);
+                    }
+
                     if (playerGroup.position.distanceTo(red.position) < 1.1) {
                         triggerGameOver(false);
+                    }
+                });
+
+                // Boss hand-to-hand combat when player reaches close proximity
+                bosses.forEach(boss => {
+                    if (boss.userData.currentHp > 0) {
+                        // Boss punches back with hands when close
+                        boss.userData.punchTimer += delta * 5;
+                        boss.userData.leftArm.rotation.x = Math.sin(boss.userData.punchTimer) * 0.8;
+                        boss.userData.rightArm.rotation.x = -Math.sin(boss.userData.punchTimer) * 0.8;
+
+                        if (playerGroup.position.distanceTo(boss.position) < 4.5) {
+                            mobSize -= 1 * delta * 20; // Hand-to-hand damage
+                            document.getElementById('hud-mob-count').innerText = Math.max(0, Math.floor(mobSize));
+                            if (mobSize <= 0) triggerGameOver(false);
+                        }
                     }
                 });
 
