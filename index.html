@@ -102,7 +102,7 @@
                     TOM'S GREEN MAZE
                 </h2>
                 <p id="overlaySubtitle" class="text-[11px] text-gray-300 max-w-xs mb-3 leading-tight">
-                    Watch out for patrolling enemies blocking paths! Smoothly drag Tom to the Trophy.
+                    Wait for the right moment and drag Tom smoothly to the Trophy!
                 </p>
                 <button id="startPlayBtn" class="px-6 py-2 rounded-xl font-black text-xs uppercase tracking-wider arcade-btn text-white flex items-center gap-1.5">
                     Start Game <i class="fa-solid fa-play text-[10px]"></i>
@@ -257,17 +257,16 @@
             enemies = [];
             collectibles = [];
             rings = [];
-            const enemyCount = Math.min(5, 1 + Math.floor(currentLevel / 4));
+            const enemyCount = Math.min(4, 1 + Math.floor(currentLevel / 5));
 
-            // Patrolling enemies along pathways
             let placed = 0;
-            for (let r = 3; r < rows - 2; r += 2) {
+            for (let r = 3; r < rows - 2; r += 3) {
                 if (grid[r][1] === 0 && placed < enemyCount) {
                     enemies.push({ 
                         x: 1, 
                         y: r, 
-                        minY: Math.max(1, r - 2), 
-                        maxY: Math.min(rows - 2, r + 2), 
+                        minY: Math.max(1, r - 1), 
+                        maxY: Math.min(rows - 2, r + 1), 
                         dir: 1, 
                         type: placed % 2 === 0 ? 'bull' : 'dog' 
                     });
@@ -288,7 +287,6 @@
                 const shieldPos = safeCells.splice(Math.floor(Math.random() * safeCells.length), 1)[0];
                 collectibles.push({ x: shieldPos.x, y: shieldPos.y, type: 'shield' });
             }
-            // Add Spinning Rings
             for (let i = 0; i < 3 && safeCells.length > 0; i++) {
                 const ringPos = safeCells.splice(Math.floor(Math.random() * safeCells.length), 1)[0];
                 rings.push({ x: ringPos.x, y: ringPos.y });
@@ -374,7 +372,6 @@
             ctx.restore();
         }
 
-        // Draw Spinning Golden Rings
         function drawSpinningRing(x, y) {
             const cx = x * cellW + cellW / 2;
             const cy = y * cellH + cellH / 2;
@@ -420,8 +417,7 @@
                 }
             }
 
-            // Draw Spinning Rings
-            ringAngle += 0.08;
+            ringAngle += 0.05;
             rings.forEach(ring => {
                 drawSpinningRing(ring.x, ring.y);
             });
@@ -579,7 +575,6 @@
         });
         canvas.addEventListener('pointercancel', () => { isDragging = false; });
 
-        // Patrolling Enemy Logic (Blocking Paths without chasing player)
         function updateEnemies() {
             if (!isRunning || isGameOver) return;
             enemies.forEach(enemy => {
@@ -621,8 +616,8 @@
             document.getElementById('timerDisplay').innerText = `${mins}:${secs}`;
         }
 
-        function startGame() {
-            const lvl = document.getElementById('levelSelect').value;
+        function startGame(keepLevel = true) {
+            const lvl = parseInt(levelSelect.value);
             const cat = document.getElementById('categorySelect').value;
             
             document.getElementById('modeBadge').innerText = `${cat.toUpperCase()} • LEVEL ${lvl}`;
@@ -643,13 +638,12 @@
                 }
             }, 1000);
 
-            // Faster patrolling interval for added challenge
             if (window.enemyInterval) clearInterval(window.enemyInterval);
             window.enemyInterval = setInterval(() => {
                 if (isRunning && !isGameOver) {
                     updateEnemies();
                 }
-            }, 400);
+            }, 900);
 
             resizeCanvas();
             updateHUD();
@@ -669,7 +663,7 @@
             overlay.classList.remove('hidden');
 
             if (currentLevel < 20) {
-                document.getElementById('levelSelect').value = currentLevel + 1;
+                levelSelect.value = currentLevel + 1;
             }
         }
 
@@ -681,7 +675,7 @@
             const overlay = document.getElementById('gameOverlay');
             document.getElementById('overlayIcon').innerText = '💥';
             document.getElementById('overlayTitle').innerText = 'GAME OVER!';
-            document.getElementById('overlaySubtitle').innerText = 'You were blocked by an enemy! Click Try Again to restart this level.';
+            document.getElementById('overlaySubtitle').innerText = 'You hit an enemy! Click Try Again to restart this same level.';
             document.getElementById('startPlayBtn').innerText = 'Try Again';
             overlay.classList.remove('hidden');
         }
@@ -715,12 +709,13 @@
 
         document.getElementById('startPlayBtn').addEventListener('click', () => {
             audio.init();
-            startGame();
+            startGame(true);
         });
 
-        document.getElementById('restartBtn').addEventListener('click', () => startGame());
-        document.getElementById('categorySelect').addEventListener('change', () => startGame());
-        document.getElementById('levelSelect').addEventListener('change', () => startGame());
+        // Fixed: Restart button uses current level selector value without shifting it unexpectedly
+        document.getElementById('restartBtn').addEventListener('click', () => startGame(true));
+        document.getElementById('categorySelect').addEventListener('change', () => startGame(true));
+        document.getElementById('levelSelect').addEventListener('change', () => startGame(true));
 
         window.addEventListener('resize', resizeCanvas);
 
