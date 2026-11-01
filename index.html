@@ -59,10 +59,16 @@
                 <span id="hud-coins" class="text-2xl font-black text-amber-300 hud-shadow">0</span>
             </div>
 
-            <!-- Mob / Bullet Power -->
-            <div class="glass-panel px-5 py-2 rounded-2xl flex flex-col items-center">
-                <span class="text-[10px] text-cyan-400 font-bold tracking-widest uppercase">CROWD SIZE</span>
-                <span id="hud-mob-count" class="text-2xl font-black text-cyan-300 hud-shadow">44</span>
+            <!-- Level & Mob / Crowd Size -->
+            <div class="flex gap-2">
+                <div class="glass-panel px-4 py-2 rounded-2xl flex flex-col items-center">
+                    <span class="text-[10px] text-amber-400 font-bold tracking-widest uppercase">LEVEL</span>
+                    <span id="hud-level" class="text-2xl font-black text-amber-300 hud-shadow">1</span>
+                </div>
+                <div class="glass-panel px-5 py-2 rounded-2xl flex flex-col items-center">
+                    <span class="text-[10px] text-cyan-400 font-bold tracking-widest uppercase">CROWD SIZE</span>
+                    <span id="hud-mob-count" class="text-2xl font-black text-cyan-300 hud-shadow">44</span>
+                </div>
             </div>
 
             <!-- Pause Button -->
@@ -86,25 +92,25 @@
                 <h1 class="text-3xl md:text-4xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
                     3D RIFLE SHOOTER
                 </h1>
-                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Crowd Runner & Golem Clash</p>
+                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Levels 1 to 20 • Golem Clash</p>
             </div>
 
             <div class="w-full bg-slate-900/80 rounded-2xl p-4 border border-white/10 text-xs text-slate-300 space-y-2 text-left">
                 <div class="flex items-center gap-2">
                     <span class="text-base">🔫</span>
-                    <span>Continuous automatic rifle shooting</span>
+                    <span>Continuous automatic smooth movement & shooting</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🎯</span>
+                    <span>Enemies advance slowly towards you with guns!</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-base">⚡</span>
-                    <span>Shoot & Pass through Multiplier Gates (<b class="text-cyan-400">+1, +5, x2, x3</b>) to increase crowd size!</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-base">🚧</span>
-                    <span>Avoid road barriers and blast incoming Red Enemies!</span>
+                    <span>Pass gates (<b class="text-cyan-400">+5, x2, x3</b>) to grow crowd size</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-base">👹</span>
-                    <span>Defeat the Giant Golem Boss at the finish line!</span>
+                    <span>Defeat the Giant Golem Boss in 20 progressive levels!</span>
                 </div>
             </div>
 
@@ -209,6 +215,9 @@
         let coins = 0;
         let score = 0;
         let mobSize = 44;
+        let currentLevel = 1;
+        let maxLevels = 20;
+
         let playerX = 0;
         let playerZ = 120;
         let shootTimer = 0;
@@ -220,24 +229,20 @@
         function init3D() {
             const container = document.getElementById('canvas-container');
 
-            // Scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x7dd3fc);
             scene.fog = new THREE.FogExp2(0x7dd3fc, 0.005);
 
-            // Camera
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
             camera.position.set(0, 18, 140);
             camera.lookAt(0, 2, 90);
 
-            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Lighting
             const ambient = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambient);
 
@@ -246,10 +251,9 @@
             sun.castShadow = true;
             scene.add(sun);
 
-            // Build Environment
             buildTrack();
             buildShooterPlayer();
-            buildLevelObjects();
+            loadLevelData(currentLevel);
 
             setupControls();
             window.addEventListener('resize', onWindowResize);
@@ -257,7 +261,6 @@
             renderer.setAnimationLoop(gameLoop);
         }
 
-        // --- Bridge Track ---
         function buildTrack() {
             const roadGeo = new THREE.BoxGeometry(TRACK_WIDTH, 2, TRACK_LENGTH);
             const roadMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3 });
@@ -276,7 +279,6 @@
             scene.add(railR);
         }
 
-        // --- Shooter Character with Rifle ---
         function buildShooterPlayer() {
             playerGroup = new THREE.Group();
 
@@ -307,30 +309,48 @@
             scene.add(playerGroup);
         }
 
-        // --- Level Elements with Gates, Obstacles, Enemies & Boss ---
-        function buildLevelObjects() {
-            // Multiplier Gates (+1, +5, x2, x3)
+        function clearLevelObjects() {
+            gates.forEach(g => scene.remove(g));
+            obstacles.forEach(o => scene.remove(o));
+            redMobs.forEach(r => scene.remove(r));
+            coinPillars.forEach(c => scene.remove(c));
+            bosses.forEach(b => scene.remove(b));
+            gates = [];
+            obstacles = [];
+            redMobs = [];
+            coinPillars = [];
+            bosses = [];
+        }
+
+        function loadLevelData(level) {
+            clearLevelObjects();
+
+            // Progressive difficulty based on level (1 to 20)
+            let gateType = level % 2 === 0 ? 'x2' : 'x3';
             createGate(-2, 80, '+5', 5, false);
-            createGate(2, 40, 'x2', 2, true);
-            createGate(-1, 0, '+10', 10, false);
-            createGate(1, -40, 'x3', 3, true);
+            createGate(2, 40, gateType, level % 2 === 0 ? 2 : 3, true);
+            createGate(0, -10, '+10', 10, false);
 
-            // Obstacles / Road Barriers
-            createObstacle(-3, 60);
-            createObstacle(3, 20);
-            createObstacle(0, -20);
+            // Level specific obstacles & barriers
+            let obsCount = Math.min(4, 1 + Math.floor(level / 5));
+            for (let i = 0; i < obsCount; i++) {
+                let ox = (i % 2 === 0 ? -2.5 : 2.5);
+                createObstacle(ox, 60 - (i * 30));
+            }
 
-            // Coin Cylinders
-            createCoinCylinder(TRACK_WIDTH / 2 + 2.5, 60, 70);
-            createCoinCylinder(TRACK_WIDTH / 2 + 2.5, -10, 70);
+            createCoinCylinder(TRACK_WIDTH / 2 + 2.5, 50, 70);
 
-            // Enemy Red Swarms
-            createRedEnemies(0, 50, 25);
-            createRedEnemies(-2, 10, 35);
-            createRedEnemies(2, -30, 40);
+            // Progressive Red Enemies with advancing speed
+            let enemyCount = 15 + (level * 3);
+            let enemySpeed = 1.2 + (level * 0.15); // Level-based advance speed
+            createRedEnemies(0, 50, enemyCount, enemySpeed);
 
-            // Giant Golem Boss at Finishing Line
-            createGolemBoss(0, -120, 150);
+            // Giant Golem Boss with scaled HP
+            let bossHp = 100 + (level * 25);
+            createGolemBoss(0, -130, bossHp);
+
+            document.getElementById('hud-level').innerText = level;
+            document.getElementById('hud-mob-count').innerText = mobSize;
         }
 
         function createGate(x, z, labelText, factor, isMultiplier) {
@@ -411,8 +431,9 @@
             coinPillars.push(group);
         }
 
-        function createRedEnemies(centerX, centerZ, count) {
+        function createRedEnemies(centerX, centerZ, count, speed) {
             const matRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3 });
+            const matGun = new THREE.MeshStandardMaterial({ color: 0x111827 });
             for (let i = 0; i < count; i++) {
                 const group = new THREE.Group();
                 const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 12), matRed);
@@ -423,9 +444,15 @@
                 body.position.y = 0.55;
                 group.add(body);
 
+                // Small gun held by enemy
+                const eGun = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.5), matGun);
+                eGun.position.set(0.2, 0.6, 0.3);
+                group.add(eGun);
+
                 const offsetX = (Math.random() - 0.5) * 6;
-                const offsetZ = (Math.random() - 0.5) * 8;
+                const offsetZ = (Math.random() - 0.5) * 15;
                 group.position.set(centerX + offsetX, 0, centerZ + offsetZ);
+                group.userData = { speed: speed + (Math.random() * 0.4) };
                 scene.add(group);
                 redMobs.push(group);
             }
@@ -510,6 +537,7 @@
             coins = 0;
             score = 0;
             mobSize = 44;
+            currentLevel = 1;
             playerX = 0;
             playerZ = 120;
             isRunning = true;
@@ -518,10 +546,11 @@
             bullets.forEach(b => scene.remove(b));
             bullets = [];
 
+            loadLevelData(currentLevel);
+
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('end-screen').classList.add('hidden');
             document.getElementById('hud-coins').innerText = '0';
-            document.getElementById('hud-mob-count').innerText = mobSize;
             clock.start();
         }
 
@@ -535,11 +564,11 @@
             isRunning = false;
             if (victory) {
                 soundFX.playVictory();
-                document.getElementById('end-title').innerText = "VICTORY!";
+                document.getElementById('end-title').innerText = currentLevel >= maxLevels ? "GAME COMPLETE! 🏆" : `LEVEL ${currentLevel} CLEARED! 🎉`;
                 document.getElementById('end-title').className = "text-3xl font-black text-emerald-400 tracking-wider";
             } else {
                 soundFX.playGameOver();
-                document.getElementById('end-title').innerText = "DEFEAT!";
+                document.getElementById('end-title').innerText = "DEFEAT! ❌";
                 document.getElementById('end-title').className = "text-3xl font-black text-rose-500 tracking-wider";
             }
             document.getElementById('end-coins').innerText = `${coins} 🪙`;
@@ -555,6 +584,7 @@
                 if (keys.right) playerX += 12 * delta;
                 playerX = Math.max(-TRACK_WIDTH / 2 + 1, Math.min(TRACK_WIDTH / 2 - 1, playerX));
                 
+                // Unstoppable continuous smooth forward movement
                 playerZ -= 6 * delta;
                 playerGroup.position.set(playerX, 0, playerZ);
 
@@ -573,7 +603,7 @@
                     const b = bullets[i];
                     b.position.z -= 45 * delta;
 
-                    // Bullet vs Multiplier Gates (+1, +5, x2, x3)
+                    // Multiplier Gates
                     gates.forEach(gate => {
                         if (gate.userData.active && Math.abs(b.position.z - gate.position.z) < 1.0) {
                             if (Math.abs(b.position.x - gate.position.x) < 2.5) {
@@ -589,7 +619,7 @@
                         }
                     });
 
-                    // Bullet vs Coin Pillar Collection
+                    // Coin Cylinders
                     coinPillars.forEach(cp => {
                         if (cp.userData.active && Math.abs(b.position.z - cp.position.z) < 1.5) {
                             if (Math.abs(b.position.x - cp.position.x) < 2.0) {
@@ -603,7 +633,7 @@
                         }
                     });
 
-                    // Bullet vs Red Enemy Collision
+                    // Bullet vs Red Enemy
                     for (let r = redMobs.length - 1; r >= 0; r--) {
                         const red = redMobs[r];
                         if (b.position.distanceTo(red.position) < 0.9) {
@@ -617,7 +647,7 @@
                         }
                     }
 
-                    // Bullet vs Golem Boss Collision (Finishing Line)
+                    // Bullet vs Golem Boss
                     bosses.forEach(boss => {
                         if (boss.userData.currentHp > 0 && b.position.distanceTo(boss.position) < 3.5) {
                             soundFX.playHit();
@@ -630,7 +660,15 @@
                                 scene.remove(boss);
                                 coins += 150;
                                 score += 1000;
-                                triggerGameOver(true);
+                                
+                                if (currentLevel < maxLevels) {
+                                    currentLevel++;
+                                    soundFX.playVictory();
+                                    loadLevelData(currentLevel);
+                                    playerZ = 120; // reset track position for next level
+                                } else {
+                                    triggerGameOver(true);
+                                }
                             }
                         }
                     });
@@ -641,21 +679,25 @@
                     }
                 }
 
-                // Player vs Obstacles Collision Check
-                obstacles.forEach(obs => {
-                    if (playerGroup.position.distanceTo(obs.position) < 1.4) {
+                // Enemies slowly advancing towards the player with guns
+                redMobs.forEach(red => {
+                    red.position.z += red.userData.speed * delta;
+                    // Slight tracking towards player X position
+                    if (red.position.x < playerX) red.position.x += 0.5 * delta;
+                    else red.position.x -= 0.5 * delta;
+
+                    // Player vs Enemy collision (Game Over)
+                    if (playerGroup.position.distanceTo(red.position) < 1.1) {
                         triggerGameOver(false);
-                        return;
                     }
                 });
 
-                // Player vs Red Enemy Collision Check
-                for (let r = 0; r < redMobs.length; r++) {
-                    if (playerGroup.position.distanceTo(redMobs[r].position) < 1.0) {
+                // Obstacles collision check
+                obstacles.forEach(obs => {
+                    if (playerGroup.position.distanceTo(obs.position) < 1.3) {
                         triggerGameOver(false);
-                        return;
                     }
-                }
+                });
             }
 
             renderer.render(scene, camera);
