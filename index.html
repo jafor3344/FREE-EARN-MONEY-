@@ -8,77 +8,85 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js for 3D Graphics -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             margin: 0;
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             touch-action: none;
-            background-color: #87CEEB;
         }
         #canvas-container {
             width: 100vw;
             height: 100vh;
             display: block;
         }
-        .mini-hud {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .glass-hud {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 2px solid rgba(255, 255, 255, 0.6);
         }
     </style>
 </head>
-<body>
+<body class="bg-sky-300 overflow-hidden">
 
-    <!-- 3D Canvas Scene -->
+    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- Minimal HUD (Top Corner: Level & Score Only) -->
-    <div class="fixed top-3 left-3 right-3 flex justify-between items-center pointer-events-none z-10">
+    <!-- UI Overlay (Minimal Top HUD - Level & Score Only in Corners) -->
+    <div id="hud" class="fixed top-0 left-0 w-full p-3 flex justify-between items-start pointer-events-none z-10">
+        
         <!-- Top Left: Compact Level Badge -->
-        <div class="mini-hud px-3 py-1.5 rounded-xl flex items-center gap-2 pointer-events-auto">
-            <span id="level-badge" class="bg-amber-500 text-white font-extrabold px-2 py-0.5 rounded-lg text-xs shadow">LVL 1</span>
-            <div class="w-16 bg-gray-200 h-2 rounded-full overflow-hidden border border-white">
-                <div id="progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-150"></div>
+        <div class="glass-hud rounded-full px-4 py-2 flex items-center gap-2 shadow-lg pointer-events-auto">
+            <div id="level-badge" class="px-2.5 py-1 rounded-full bg-amber-400 font-black text-amber-950 text-xs shadow flex items-center gap-1">
+                <span>LVL</span> <span id="current-level-num">1</span>
+            </div>
+            <div class="w-20 bg-white/50 rounded-full h-3 overflow-hidden p-0.5 border border-white/60">
+                <div id="progress-bar" class="bg-gradient-to-r from-orange-400 to-amber-500 h-full w-0 rounded-full transition-all duration-100"></div>
             </div>
         </div>
 
         <!-- Top Right: Compact Score Only -->
-        <div class="mini-hud px-3 py-1.5 rounded-xl text-center pointer-events-auto">
-            <span class="text-[10px] font-bold text-gray-500 uppercase mr-1">Score:</span>
-            <span id="score-text" class="text-sm font-black text-gray-800">0</span>
+        <div class="glass-hud rounded-2xl px-4 py-1.5 shadow-md text-right pointer-events-auto">
+            <div class="text-[9px] font-black text-sky-950 uppercase tracking-wider">Score</div>
+            <div id="score-text" class="text-xl font-black text-emerald-950">0</div>
         </div>
     </div>
 
-    <!-- Bottom Center Buttons (Appears ONLY after Giant Dance finishes) -->
-    <div id="action-panel" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 hidden flex gap-3">
-        <button id="next-level-btn" class="hidden px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-xl active:scale-95 transition">
-            NEXT LEVEL ➔
-        </button>
-        <button id="restart-btn" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black text-sm rounded-2xl shadow-xl active:scale-95 transition">
-            TRY AGAIN ↺
-        </button>
+    <!-- Hidden State Overlay (Only Buttons appear at bottom after Dance finishes) -->
+    <div id="game-over-screen" class="fixed inset-0 bg-transparent flex flex-col items-center justify-end z-30 hidden pb-12 pointer-events-none">
+        <div id="button-container" class="flex flex-col gap-2 pointer-events-auto max-w-xs w-full px-6">
+            <button id="next-level-btn" class="hidden w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-lg rounded-2xl shadow-xl transform active:scale-95 transition flex items-center justify-center gap-2 border-b-4 border-emerald-700">
+                পরবর্তী লেভেল <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button id="restart-btn" class="w-full py-3.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-lg rounded-2xl shadow-xl transform active:scale-95 transition flex items-center justify-center gap-2 border-b-4 border-amber-600">
+                <i class="fa-solid fa-rotate-right"></i> আবার খেলুন
+            </button>
+        </div>
     </div>
 
-    <!-- Main Game Script -->
+    <!-- Main Logic -->
     <script>
         // Audio Synthesizer
         const AudioFX = {
             ctx: null,
             init() {
-                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
             },
             playHop() {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -90,8 +98,8 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
-                osc.frequency.setValueAtTime(700, this.ctx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08);
                 gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
                 osc.connect(gain);
@@ -99,12 +107,26 @@
                 osc.start();
                 osc.stop(this.ctx.currentTime + 0.2);
             },
+            playColorGate() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            },
             playHit() {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.2);
                 gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
@@ -115,7 +137,7 @@
             },
             playWin() {
                 if (!this.ctx) return;
-                const notes = [440, 554, 659, 880];
+                const notes = [440, 554.37, 659.25, 880, 1046.50];
                 notes.forEach((freq, idx) => {
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
@@ -130,22 +152,25 @@
             }
         };
 
+        // --- Color Palettes System ---
         const JUICE_COLORS = [
-            { id: 'green', hex: 0x2ecc71 },
-            { id: 'red', hex: 0xe74c3c },
-            { id: 'yellow', hex: 0xf1c40f },
-            { id: 'blue', hex: 0x3498db },
-            { id: 'purple', hex: 0x9b59b6 }
+            { id: 'green', name: 'Green Juice', hex: 0x84cc16, css: '#84cc16' },
+            { id: 'red', name: 'Red Juice', hex: 0xef4444, css: '#ef4444' },
+            { id: 'yellow', name: 'Yellow Juice', hex: 0xeab308, css: '#eab308' },
+            { id: 'blue', name: 'Blue Juice', hex: 0x3b82f6, css: '#3b82f6' },
+            { id: 'purple', name: 'Purple Juice', hex: 0xa855f7, css: '#a855f7' }
         ];
 
         let currentJuiceColor = JUICE_COLORS[0];
+
+        // --- 3D Scene Variables ---
         let scene, camera, renderer;
         let playerGroup, glassMesh, juiceLevelMesh;
-        let giantBoyGroup, boyArmL, boyArmR;
-        let trackLength = 220;
+        let giantGirlGroup, girlHead, girlBody, girlArmL, girlArmR, girlLegL, girlLegR;
+        let trackLength = 250;
         let isPlaying = false;
-        let isDancing = false;
-        let danceTimer = 0;
+        let isVictorious = false;
+        let danceDurationTimer = 0; // Extended Dance duration controller
 
         let currentLevel = 1;
         let score = 0;
@@ -154,322 +179,545 @@
         let targetX = 0;
 
         let forwardSpeed = 0.14;
-        const laneLimit = 2.4;
+        const laneLimit = 2.6;
 
         let hopTime = 0;
-        const hopFrequency = 6.5;
-        const hopHeight = 0.5;
+        let hopFrequency = 6.5;
+        const hopHeight = 0.7;
+        let giantGirlJumpTime = 0;
 
         let colorGates = [];
         let collectibles = [];
         let obstacles = [];
+        let palmTrees = [];
+        let particles = [];
 
         let isDragging = false;
         let prevTouchX = 0;
+        let keys = { ArrowLeft: false, ArrowRight: false, a: false, d: false };
 
+        // --- Initialization ---
         function init() {
             const container = document.getElementById('canvas-container');
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB);
-            scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
+            scene.background = new THREE.Color(0x60a5fa);
+            scene.fog = new THREE.FogExp2(0x60a5fa, 0.007);
 
             camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 300);
-            camera.position.set(0, 4.5, -7.5);
-            camera.lookAt(0, 1.5, 4);
+            camera.position.set(0, 5, -8);
+            camera.lookAt(0, 1.5, 5);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.75);
             scene.add(ambient);
 
-            const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.9);
             sunLight.position.set(15, 30, -10);
             sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
             scene.add(sunLight);
 
-            createPlayer();
+            createJuiceGlassPlayer();
             setupInput();
             startLevel(1);
 
             window.addEventListener('resize', onWindowResize);
-            animate();
+            animate(0);
         }
 
-        function buildTrack(level) {
+        // --- Build Level World & Environment ---
+        function buildLevelWorld(level) {
             colorGates.forEach(g => scene.remove(g));
             collectibles.forEach(c => scene.remove(c));
             obstacles.forEach(o => scene.remove(o));
+            palmTrees.forEach(t => scene.remove(t));
             colorGates = [];
             collectibles = [];
             obstacles = [];
+            palmTrees = [];
 
-            if (giantBoyGroup) scene.remove(giantBoyGroup);
+            if (giantGirlGroup) scene.remove(giantGirlGroup);
 
-            forwardSpeed = 0.12 + level * 0.03;
-            trackLength = 200 + level * 40;
+            if (level === 1) {
+                forwardSpeed = 0.14;
+                trackLength = 220;
+            } else if (level === 2) {
+                forwardSpeed = 0.18;
+                trackLength = 280;
+            } else {
+                forwardSpeed = 0.22;
+                trackLength = 340;
+            }
 
             const existingTrack = scene.getObjectByName("track");
             if (existingTrack) scene.remove(existingTrack);
 
-            const trackGeo = new THREE.PlaneGeometry(6, trackLength);
-            const trackMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+            const trackGeo = new THREE.PlaneGeometry(6.5, trackLength);
+            const trackMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
             const track = new THREE.Mesh(trackGeo, trackMat);
             track.name = "track";
             track.rotation.x = -Math.PI / 2;
             track.position.set(0, 0, trackLength / 2 - 5);
+            track.receiveShadow = true;
             scene.add(track);
 
+            // Add 3D Palm Trees along the sides of the track
+            for (let z = 10; z < trackLength; z += 18) {
+                spawnPalmTree(-4.8, z);
+                spawnPalmTree(4.8, z);
+            }
+
             const finishZ = trackLength - 15;
-            const archGeo = new THREE.TorusGeometry(3.2, 0.25, 12, 24, Math.PI);
-            const archMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f });
+            const archGeo = new THREE.TorusGeometry(3.6, 0.3, 12, 24, Math.PI);
+            const archMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.2 });
             const arch = new THREE.Mesh(archGeo, archMat);
             arch.position.set(0, 0, finishZ);
             scene.add(arch);
 
-            createGiantBoyCharacter(finishZ + 6);
+            createGiantGirlCharacter(finishZ + 6);
 
-            let colorIdx = 0;
-            for (let z = 25; z < finishZ - 15; z += 24) {
-                const targetColor = JUICE_COLORS[(colorIdx++) % JUICE_COLORS.length];
-                spawnColorGate(z, targetColor);
-                spawnCups(z + 8, targetColor);
-                spawnObstacle(z + 16, level);
+            let colorIndex = 0;
+            for (let z = 25; z < finishZ - 20; z += 22) {
+                const gateColor = JUICE_COLORS[(colorIndex++) % JUICE_COLORS.length];
+                spawnColorGate(z, gateColor);
+                spawnGlassCluster(z + 8, gateColor);
+
+                if (level >= 2 && Math.random() > 0.3) {
+                    spawnMovingObstacle(z + 15, level);
+                } else {
+                    spawnStaticSpike(z + 15);
+                }
             }
         }
 
-        function createGiantBoyCharacter(zPos) {
-            giantBoyGroup = new THREE.Group();
-            giantBoyGroup.position.set(0, 0, zPos);
-            giantBoyGroup.scale.set(2.0, 2.0, 2.0);
+        // --- 3D Palm Tree Builder ---
+        function spawnPalmTree(x, z) {
+            const treeGroup = new THREE.Group();
+            treeGroup.position.set(x, 0, z);
 
-            // Shirt / Body
-            const bodyGeo = new THREE.BoxGeometry(1.0, 1.4, 0.6);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 1.2;
-            giantBoyGroup.add(body);
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.35, 5, 8);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 2.5;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
 
-            // Head
-            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
-            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
-            const head = new THREE.Mesh(headGeo, skinMat);
-            head.position.y = 2.3;
-            giantBoyGroup.add(head);
+            // Leaves
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.5 });
+            for (let i = 0; i < 5; i++) {
+                const leafGeo = new THREE.ConeGeometry(1.4, 0.3, 4);
+                const leaf = new THREE.Mesh(leafGeo, leafMat);
+                leaf.position.set(0, 5, 0);
+                leaf.rotation.y = (i * 72 * Math.PI) / 180;
+                leaf.rotation.z = 0.4;
+                treeGroup.add(leaf);
+            }
 
-            // Hair
-            const hairGeo = new THREE.BoxGeometry(1.05, 0.3, 1.05);
-            const hairMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+            scene.add(treeGroup);
+            palmTrees.push(treeGroup);
+        }
+
+        // --- 3D Giant Girl Character at Finish Line ---
+        function createGiantGirlCharacter(zPos) {
+            giantGirlGroup = new THREE.Group();
+            giantGirlGroup.position.set(0, 0, zPos);
+            giantGirlGroup.scale.set(2.2, 2.2, 2.2);
+
+            const dressGeo = new THREE.ConeGeometry(0.8, 1.6, 16);
+            const dressMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 });
+            girlBody = new THREE.Mesh(dressGeo, dressMat);
+            girlBody.position.y = 1.3;
+            girlBody.castShadow = true;
+            giantGirlGroup.add(girlBody);
+
+            const headGeo = new THREE.SphereGeometry(0.55, 20, 20);
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.6 });
+            girlHead = new THREE.Mesh(headGeo, skinMat);
+            girlHead.position.y = 2.4;
+            girlHead.castShadow = true;
+            giantGirlGroup.add(girlHead);
+
+            const eyeGeo = new THREE.SphereGeometry(0.08, 10, 10);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeL.position.set(-0.18, 2.5, -0.48);
+            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeR.position.set(0.18, 2.5, -0.48);
+            giantGirlGroup.add(eyeL, eyeR);
+
+            const hairGeo = new THREE.SphereGeometry(0.62, 16, 16);
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x5c2c16, roughness: 0.8 });
             const hair = new THREE.Mesh(hairGeo, hairMat);
-            hair.position.y = 2.6;
-            giantBoyGroup.add(hair);
+            hair.position.set(0, 2.55, 0.1);
+            giantGirlGroup.add(hair);
 
-            // Arms
-            const armGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.0, 8);
-            boyArmL = new THREE.Mesh(armGeo, skinMat);
-            boyArmL.position.set(-0.7, 1.4, 0);
-            boyArmR = new THREE.Mesh(armGeo, skinMat);
-            boyArmR.position.set(0.7, 1.4, 0);
-            giantBoyGroup.add(boyArmL, boyArmR);
+            const armGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.9, 10);
+            girlArmL = new THREE.Mesh(armGeo, skinMat);
+            girlArmL.position.set(-0.75, 1.7, 0);
+            girlArmL.rotation.z = Math.PI / 6;
 
-            scene.add(giantBoyGroup);
+            girlArmR = new THREE.Mesh(armGeo, skinMat);
+            girlArmR.position.set(0.75, 1.7, 0);
+            girlArmR.rotation.z = -Math.PI / 6;
+
+            giantGirlGroup.add(girlArmL, girlArmR);
+
+            const legGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.8, 10);
+            girlLegL = new THREE.Mesh(legGeo, skinMat);
+            girlLegL.position.set(-0.35, 0.4, 0);
+            girlLegR = new THREE.Mesh(legGeo, skinMat);
+            girlLegR.position.set(0.35, 0.4, 0);
+            giantGirlGroup.add(girlLegL, girlLegR);
+
+            scene.add(giantGirlGroup);
         }
 
         function spawnColorGate(zPos, targetColor) {
-            const gate = new THREE.Group();
-            gate.position.set(0, 0, zPos);
-            const ringGeo = new THREE.TorusGeometry(2.2, 0.2, 12, 24);
-            const ringMat = new THREE.MeshStandardMaterial({ color: targetColor.hex, emissive: targetColor.hex, emissiveIntensity: 0.5 });
+            const gateGroup = new THREE.Group();
+            gateGroup.position.set(0, 0, zPos);
+
+            const ringGeo = new THREE.TorusGeometry(2.4, 0.25, 16, 30);
+            const ringMat = new THREE.MeshStandardMaterial({ color: targetColor.hex, emissive: targetColor.hex, emissiveIntensity: 0.4, roughness: 0.2 });
             const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.position.y = 1.4;
-            gate.add(ring);
-            gate.userData = { color: targetColor };
-            scene.add(gate);
-            colorGates.push(gate);
+            ring.position.y = 1.6;
+            gateGroup.add(ring);
+
+            const particleGeo = new THREE.PlaneGeometry(4.2, 3.2);
+            const particleMat = new THREE.MeshBasicMaterial({ color: targetColor.hex, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+            const curtain = new THREE.Mesh(particleGeo, particleMat);
+            curtain.position.y = 1.6;
+            gateGroup.add(curtain);
+
+            gateGroup.userData = { color: targetColor };
+            scene.add(gateGroup);
+            colorGates.push(gateGroup);
         }
 
-        function spawnCups(zPos, targetColor) {
-            [-1.6, 0, 1.6].forEach((xPos, idx) => {
+        function spawnGlassCluster(zPos, currentColorTarget) {
+            const positions = [-1.8, 0, 1.8];
+            positions.forEach((xPos, idx) => {
                 const isMatch = (idx === 1);
-                const colorObj = isMatch ? targetColor : JUICE_COLORS[Math.floor(Math.random() * JUICE_COLORS.length)];
+                const colorObj = isMatch ? currentColorTarget : JUICE_COLORS[(Math.floor(Math.random() * JUICE_COLORS.length))];
 
-                const cup = new THREE.Group();
-                cup.position.set(xPos, 0.7, zPos);
-                const cupGeo = new THREE.CylinderGeometry(0.35, 0.22, 0.8, 12);
-                const cupMat = new THREE.MeshStandardMaterial({ color: colorObj.hex });
-                const mesh = new THREE.Mesh(cupGeo, cupMat);
-                cup.add(mesh);
-                cup.userData = { color: colorObj, isMatching: isMatch };
-                scene.add(cup);
-                collectibles.push(cup);
+                const cupGroup = new THREE.Group();
+                cupGroup.position.set(xPos, 0.9, zPos);
+
+                const cupGeo = new THREE.CylinderGeometry(0.4, 0.26, 0.9, 14);
+                const cupMat = new THREE.MeshStandardMaterial({ color: colorObj.hex, roughness: 0.2 });
+                const cup = new THREE.Mesh(cupGeo, cupMat);
+                cup.castShadow = true;
+                cupGroup.add(cup);
+
+                cupGroup.userData = { color: colorObj, isMatching: isMatch };
+                scene.add(cupGroup);
+                collectibles.push(cupGroup);
             });
         }
 
-        function spawnObstacle(zPos, level) {
-            const obs = new THREE.Group();
-            obs.position.set((Math.random() - 0.5) * 3.0, 0.4, zPos);
-            const spikeGeo = new THREE.ConeGeometry(0.4, 1.0, 8);
-            const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe67e22 });
+        function spawnStaticSpike(zPos) {
+            const obstacle = new THREE.Group();
+            obstacle.position.set((Math.random() - 0.5) * 3.5, 0.5, zPos);
+
+            const spikeGeo = new THREE.ConeGeometry(0.45, 1.2, 8);
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4 });
             const spike = new THREE.Mesh(spikeGeo, spikeMat);
-            obs.add(spike);
-            scene.add(obs);
-            obstacles.push(obs);
+            spike.castShadow = true;
+            obstacle.add(spike);
+
+            scene.add(obstacle);
+            obstacles.push(obstacle);
         }
 
-        function createPlayer() {
+        function spawnMovingObstacle(zPos, level) {
+            const gateGroup = new THREE.Group();
+            gateGroup.position.set(0, 0, zPos);
+
+            const boardGeo = new THREE.BoxGeometry(2.4, 1.4, 0.4);
+            const boardMat = new THREE.MeshStandardMaterial({ color: 0x7e22ce });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.position.y = 0.9;
+            board.castShadow = true;
+
+            gateGroup.add(board);
+            gateGroup.userData = {
+                mesh: board,
+                initialX: -1.8,
+                moveRange: 3.6,
+                speed: 1.0 + level * 0.4,
+                phase: Math.random() * Math.PI
+            };
+
+            scene.add(gateGroup);
+            obstacles.push(gateGroup);
+        }
+
+        function createJuiceGlassPlayer() {
             playerGroup = new THREE.Group();
-            const glassGeo = new THREE.CylinderGeometry(0.65, 0.4, 1.6, 16, 1, true);
-            const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, transmission: 0.8, side: THREE.DoubleSide });
+
+            const glassGeo = new THREE.CylinderGeometry(0.7, 0.4, 1.8, 24, 1, true);
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: 0xf8fafc,
+                transparent: true,
+                opacity: 0.45,
+                roughness: 0.1,
+                transmission: 0.85,
+                thickness: 0.4,
+                side: THREE.DoubleSide
+            });
             glassMesh = new THREE.Mesh(glassGeo, glassMat);
-            glassMesh.position.y = 1.0;
+            glassMesh.position.y = 1.1;
+            glassMesh.castShadow = true;
             playerGroup.add(glassMesh);
 
-            const juiceGeo = new THREE.CylinderGeometry(0.6, 0.38, 1.4, 16);
-            const juiceMat = new THREE.MeshStandardMaterial({ color: currentJuiceColor.hex });
+            const juiceGeo = new THREE.CylinderGeometry(0.66, 0.42, 1.6, 20);
+            const juiceMat = new THREE.MeshStandardMaterial({ color: currentJuiceColor.hex, roughness: 0.2 });
             juiceLevelMesh = new THREE.Mesh(juiceGeo, juiceMat);
             glassMesh.add(juiceLevelMesh);
 
+            const faceGroup = new THREE.Group();
+            const eyeGeo = new THREE.SphereGeometry(0.12, 10, 10);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const pupilGeo = new THREE.SphereGeometry(0.06, 10, 10);
+            const pupilMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeL.position.set(-0.22, 0.2, 0.62);
+            const pupilL = new THREE.Mesh(pupilGeo, pupilMat);
+            pupilL.position.set(-0.22, 0.2, 0.72);
+            faceGroup.add(eyeL, pupilL);
+
+            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeR.position.set(0.22, 0.2, 0.62);
+            const pupilR = new THREE.Mesh(pupilGeo, pupilMat);
+            pupilR.position.set(0.22, 0.2, 0.72);
+            faceGroup.add(eyeR, pupilR);
+
+            glassMesh.add(faceGroup);
             scene.add(playerGroup);
         }
 
         function setupInput() {
-            const onDown = (e) => {
+            window.addEventListener('keydown', (e) => { if (e.key in keys) keys[e.key] = true; });
+            window.addEventListener('keyup', (e) => { if (e.key in keys) keys[e.key] = false; });
+
+            const onPointerDown = (e) => {
                 if (!isPlaying) return;
                 isDragging = true;
                 prevTouchX = e.touches ? e.touches[0].clientX : e.clientX;
                 AudioFX.init();
             };
-            const onMove = (e) => {
+
+            const onPointerMove = (e) => {
                 if (!isDragging || !isPlaying) return;
                 const currentX = e.touches ? e.touches[0].clientX : e.clientX;
-                targetX += (currentX - prevTouchX) * 0.01;
-                targetX = Math.max(-laneLimit, Math.min(laneLimit, targetX));
+                const deltaX = currentX - prevTouchX;
                 prevTouchX = currentX;
+
+                targetX += deltaX * 0.012;
+                targetX = Math.max(-laneLimit, Math.min(laneLimit, targetX));
             };
-            const onUp = () => { isDragging = false; };
 
-            window.addEventListener('mousedown', onDown);
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-            window.addEventListener('touchstart', onDown);
-            window.addEventListener('touchmove', onMove);
-            window.addEventListener('touchend', onUp);
+            const onPointerUp = () => { isDragging = false; };
 
-            window.addEventListener('keydown', (e) => {
-                if (!isPlaying) return;
-                if (e.key === 'ArrowLeft' || e.key === 'a') targetX = Math.max(-laneLimit, targetX - 0.5);
-                if (e.key === 'ArrowRight' || e.key === 'd') targetX = Math.min(laneLimit, targetX + 0.5);
-            });
+            window.addEventListener('mousedown', onPointerDown);
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
 
-            document.getElementById('next-level-btn').addEventListener('click', () => startLevel(currentLevel + 1));
+            window.addEventListener('touchstart', onPointerDown);
+            window.addEventListener('touchmove', onPointerMove);
+            window.addEventListener('touchend', onPointerUp);
+
             document.getElementById('restart-btn').addEventListener('click', () => startLevel(currentLevel));
+            document.getElementById('next-level-btn').addEventListener('click', () => startLevel(currentLevel + 1));
         }
 
-        function startLevel(lvl) {
+        function startLevel(levelNum) {
             AudioFX.init();
-            currentLevel = Math.min(3, lvl);
+            currentLevel = Math.min(3, levelNum);
             isPlaying = true;
-            isDancing = false;
-            danceTimer = 0;
+            isVictorious = false;
+            danceDurationTimer = 0;
             juiceVolume = 100;
             playerPos = { x: 0, z: 0 };
             targetX = 0;
             hopTime = 0;
 
-            document.getElementById('action-panel').classList.add('hidden');
-            document.getElementById('level-badge').innerText = `LVL ${currentLevel}`;
+            currentJuiceColor = JUICE_COLORS[0];
+            juiceLevelMesh.material.color.setHex(currentJuiceColor.hex);
 
-            buildTrack(currentLevel);
+            buildLevelWorld(currentLevel);
+
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('next-level-btn').classList.add('hidden');
+            document.getElementById('current-level-num').innerText = currentLevel;
+
+            updateHUD();
         }
 
-        function finishReached() {
+        function triggerVictory() {
             isPlaying = false;
-            isDancing = true;
-            danceTimer = 0;
+            isVictorious = true;
+            danceDurationTimer = 0; // Reset dance duration timer
             AudioFX.playWin();
         }
 
-        function gameOver() {
+        function triggerGameOver() {
             isPlaying = false;
             AudioFX.playHit();
+            document.getElementById('game-over-screen').classList.remove('hidden');
             document.getElementById('next-level-btn').classList.add('hidden');
-            document.getElementById('action-panel').classList.remove('hidden');
         }
 
-        function animate() {
+        function updateHUD() {
+            document.getElementById('score-text').innerText = score;
+            const progress = Math.min(100, Math.max(0, (playerPos.z / (trackLength - 15)) * 100));
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+        }
+
+        function createJuiceSplash(pos, colorHex) {
+            for (let i = 0; i < 12; i++) {
+                const pGeo = new THREE.SphereGeometry(0.12, 6, 6);
+                const pMat = new THREE.MeshBasicMaterial({ color: colorHex });
+                const p = new THREE.Mesh(pGeo, pMat);
+                p.position.copy(pos);
+                p.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.5,
+                        Math.random() * 0.5 + 0.2,
+                        (Math.random() - 0.5) * 0.5
+                    ),
+                    life: 1.0
+                };
+                scene.add(p);
+                particles.push(p);
+            }
+        }
+
+        // --- Render Loop ---
+        function animate(timestamp) {
             requestAnimationFrame(animate);
 
+            const delta = 0.016;
+
             if (isPlaying) {
-                playerPos.x += (targetX - playerPos.x) * 0.15;
+                if (keys.ArrowLeft || keys.a) targetX -= 0.10;
+                if (keys.ArrowRight || keys.d) targetX += 0.10;
+                targetX = Math.max(-laneLimit, Math.min(laneLimit, targetX));
+
+                playerPos.x += (targetX - playerPos.x) * 0.18;
                 playerPos.z += forwardSpeed;
 
-                hopTime += 0.016 * hopFrequency;
+                hopTime += delta * hopFrequency;
                 const hopY = Math.abs(Math.sin(hopTime)) * hopHeight;
 
-                if (Math.sin(hopTime) < 0.1 && Math.sin(hopTime - 0.08) >= 0.1) {
+                if (Math.sin(hopTime) < 0.1 && Math.sin(hopTime - delta * hopFrequency) >= 0.1) {
                     AudioFX.playHop();
                 }
 
                 playerGroup.position.set(playerPos.x, hopY, playerPos.z);
+                glassMesh.rotation.z = (playerPos.x - targetX) * 0.2;
 
-                camera.position.z = playerPos.z - 7;
+                camera.position.z = playerPos.z - 7.5;
                 camera.position.x = playerPos.x * 0.3;
-                camera.lookAt(playerPos.x * 0.3, 1.4, playerPos.z + 4);
+                camera.position.y = 4.5 + hopY * 0.2;
+                camera.lookAt(playerPos.x * 0.3, 1.6, playerPos.z + 5);
 
                 const finishZ = trackLength - 15;
-                if (playerPos.z >= finishZ) finishReached();
+                if (playerPos.z >= finishZ) {
+                    triggerVictory();
+                }
 
                 colorGates.forEach(gate => {
                     if (gate.visible && Math.abs(playerPos.z - gate.position.z) < 0.8) {
                         gate.visible = false;
                         currentJuiceColor = gate.userData.color;
                         juiceLevelMesh.material.color.setHex(currentJuiceColor.hex);
+                        AudioFX.playColorGate();
+                        createJuiceSplash(playerGroup.position, gate.userData.color.hex);
                     }
                 });
 
                 collectibles.forEach(item => {
-                    if (item.visible && Math.abs(playerPos.z - item.position.z) < 0.8 && Math.abs(playerPos.x - item.position.x) < 0.8) {
+                    if (item.visible && Math.abs(playerPos.z - item.position.z) < 0.8 && Math.abs(playerPos.x - item.position.x) < 0.9) {
                         item.visible = false;
+
                         if (item.userData.color.id === currentJuiceColor.id) {
                             AudioFX.playCollect();
                             score += 20;
-                            document.getElementById('score-text').innerText = score;
+                            createJuiceSplash(playerGroup.position, currentJuiceColor.hex);
                         } else {
                             AudioFX.playHit();
                             juiceVolume -= 25;
-                            if (juiceVolume <= 0) gameOver();
+                            createJuiceSplash(playerGroup.position, 0xef4444);
+                            if (juiceVolume <= 0) triggerGameOver();
                         }
                     }
                 });
 
                 obstacles.forEach(obs => {
-                    if (Math.abs(playerPos.z - obs.position.z) < 0.8 && Math.abs(playerPos.x - obs.position.x) < 0.8) {
-                        obs.position.z -= 500;
+                    if (obs.userData && obs.userData.mesh) {
+                        const sweep = Math.sin(timestamp * 0.002 * obs.userData.speed + obs.userData.phase);
+                        obs.userData.mesh.position.x = obs.userData.initialX + sweep * obs.userData.moveRange;
+                    }
+
+                    const dz = playerPos.z - obs.position.z;
+                    const dx = playerPos.x - (obs.userData?.mesh ? obs.position.x + obs.userData.mesh.position.x : obs.position.x);
+
+                    if (Math.abs(dz) < 0.8 && Math.abs(dx) < 1.1) {
                         AudioFX.playHit();
                         juiceVolume -= 30;
-                        if (juiceVolume <= 0) gameOver();
+                        createJuiceSplash(playerGroup.position, currentJuiceColor.hex);
+                        obs.position.z -= 500;
+                        if (juiceVolume <= 0) triggerGameOver();
                     }
                 });
 
-                const progress = Math.min(100, (playerPos.z / finishZ) * 100);
-                document.getElementById('progress-bar').style.width = `${progress}%`;
-            } else if (isDancing) {
-                // Giant Boy Dancing Animation at finish line
-                danceTimer += 0.05;
-                giantBoyGroup.position.y = Math.abs(Math.sin(danceTimer * 3)) * 1.2;
-                boyArmL.rotation.z = Math.PI / 3 + Math.sin(danceTimer * 5) * 0.5;
-                boyArmR.rotation.z = -Math.PI / 3 - Math.sin(danceTimer * 5) * 0.5;
+                updateHUD();
+            }
 
-                // After dancing for a short period, show Next Level / Try Again buttons
-                if (danceTimer > 4.0) {
-                    isDancing = false;
+            // Extended Dancing Animation for Giant Girl at Finish Line
+            if (isVictorious && giantGirlGroup) {
+                danceDurationTimer += delta;
+                giantGirlJumpTime += delta * 12;
+                
+                // Dance Motion (Jump & Sway)
+                const jumpY = Math.abs(Math.sin(giantGirlJumpTime)) * 1.6;
+                giantGirlGroup.position.y = jumpY;
+                giantGirlGroup.rotation.y += 0.04;
+
+                girlArmL.rotation.z = Math.PI / 3 + Math.sin(giantGirlJumpTime) * 0.5;
+                girlArmR.rotation.z = -Math.PI / 3 - Math.sin(giantGirlJumpTime) * 0.5;
+
+                if (Math.random() > 0.3) {
+                    createJuiceSplash(new THREE.Vector3((Math.random() - 0.5) * 6, 2, trackLength - 10), JUICE_COLORS[Math.floor(Math.random() * JUICE_COLORS.length)].hex);
+                }
+
+                // Show buttons AFTER 8 seconds of dancing
+                if (danceDurationTimer > 8.0) {
+                    document.getElementById('game-over-screen').classList.remove('hidden');
                     if (currentLevel < 3) {
                         document.getElementById('next-level-btn').classList.remove('hidden');
                     }
-                    document.getElementById('action-panel').classList.remove('hidden');
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.add(p.userData.velocity);
+                p.userData.life -= 0.04;
+                p.scale.multiplyScalar(0.92);
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
                 }
             }
 
