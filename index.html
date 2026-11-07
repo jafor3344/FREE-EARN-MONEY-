@@ -2,513 +2,478 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Juice Glass Runner 3D</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Graphics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-        #canvas-container { width: 100vw; height: 100vh; display: block; }
-        .hud-glass {
-            background: rgba(255, 255, 255, 0.85);
+        body {
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: none;
+            background-color: #87CEEB;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        .mini-hud {
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(8px);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
 
-    <!-- Canvas Container -->
+    <!-- 3D Canvas Scene -->
     <div id="canvas-container"></div>
 
-    <!-- UI Overlay (Top Corner Level & Score as requested) -->
-    <div class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
-        <!-- Level & Progress Header -->
-        <div class="hud-glass px-4 py-2 rounded-2xl flex items-center space-x-3 pointer-events-auto">
-            <div id="level-badge" class="bg-amber-500 text-white font-black px-3 py-1 rounded-xl text-sm shadow">LVL 1</div>
-            <div class="flex items-center space-x-2">
-                <div class="w-28 bg-gray-200 h-3 rounded-full overflow-hidden border border-white">
-                    <div id="progress-bar" class="bg-gradient-to-r from-emerald-400 to-green-500 h-full w-0 transition-all duration-300"></div>
-                </div>
-                <span class="text-xs font-bold text-gray-700">🏁</span>
+    <!-- Minimal HUD (Top Corner: Level & Score Only) -->
+    <div class="fixed top-3 left-3 right-3 flex justify-between items-center pointer-events-none z-10">
+        <!-- Top Left: Compact Level Badge -->
+        <div class="mini-hud px-3 py-1.5 rounded-xl flex items-center gap-2 pointer-events-auto">
+            <span id="level-badge" class="bg-amber-500 text-white font-extrabold px-2 py-0.5 rounded-lg text-xs shadow">LVL 1</span>
+            <div class="w-16 bg-gray-200 h-2 rounded-full overflow-hidden border border-white">
+                <div id="progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-150"></div>
             </div>
         </div>
 
-        <!-- Score & Color Match Card -->
-        <div class="flex space-x-2 pointer-events-auto">
-            <div class="hud-glass px-3 py-2 rounded-2xl flex items-center space-x-2">
-                <div id="color-indicator" class="w-4 h-4 rounded-full bg-emerald-500 border border-white shadow"></div>
-                <div class="text-right">
-                    <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Current Match</div>
-                    <div id="color-text" class="text-xs font-extrabold text-emerald-600">Green Juice</div>
-                </div>
-            </div>
-            <div class="hud-glass px-4 py-2 rounded-2xl text-center">
-                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Score</div>
-                <div id="score-val" class="text-sm font-black text-gray-800">0</div>
-            </div>
+        <!-- Top Right: Compact Score Only -->
+        <div class="mini-hud px-3 py-1.5 rounded-xl text-center pointer-events-auto">
+            <span class="text-[10px] font-bold text-gray-500 uppercase mr-1">Score:</span>
+            <span id="score-text" class="text-sm font-black text-gray-800">0</span>
         </div>
     </div>
 
-    <!-- Start / Restart / Next Level Screens (Appears after Giant Dance) -->
-    <div id="end-screen" class="absolute inset-0 bg-black/50 backdrop-blur-sm hidden flex flex-col items-center justify-center z-30">
-        <div class="hud-glass p-8 rounded-3xl text-center max-w-xs w-full shadow-2xl animate-bounce-short">
-            <div id="end-title" class="text-2xl font-black text-gray-800 mb-2">লেভেল ১ বিজয়ী!</div>
-            <div id="end-subtitle" class="text-sm text-gray-600 mb-6">দৈত্য মেয়েটি উল্লাসে লাফিয়ে উঠছে!</div>
-            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl py-3 mb-6">
-                <div class="text-xs text-emerald-600 font-semibold uppercase">মোট স্কোর</div>
-                <div id="final-score" class="text-3xl font-black text-emerald-700">160</div>
-            </div>
-            <button id="action-btn" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg hover:opacity-90 active:scale-95 transition">
-                পরবর্তী লেভেল →
-            </button>
-        </div>
+    <!-- Bottom Center Buttons (Appears ONLY after Giant Dance finishes) -->
+    <div id="action-panel" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 hidden flex gap-3">
+        <button id="next-level-btn" class="hidden px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-2xl shadow-xl active:scale-95 transition">
+            NEXT LEVEL ➔
+        </button>
+        <button id="restart-btn" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black text-sm rounded-2xl shadow-xl active:scale-95 transition">
+            TRY AGAIN ↺
+        </button>
     </div>
 
-    <!-- Main Game Logic script -->
+    <!-- Main Game Script -->
     <script>
-        // Game State Variables
-        let scene, camera, renderer;
-        let player;
-        let currentLevel = 1;
-        let score = 0;
-        let gameActive = false;
-        let trackLength = 150;
-        let playerZ = 0;
-        let playerX = 0;
-        let targetX = 0;
-        
-        // Speeds & Physics (Normal & Smooth Speed)
-        const forwardSpeeds = { 1: 0.12, 2: 0.15, 3: 0.18 };
-        let forwardSpeed = forwardSpeeds[1];
-        let hopSpeed = 0.12;
-        let hopHeight = 0.35;
-        let hopAngle = 0;
+        // Audio Synthesizer
+        const AudioFX = {
+            ctx: null,
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            playHop() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            },
+            playCollect() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(700, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            },
+            playHit() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            },
+            playWin() {
+                if (!this.ctx) return;
+                const notes = [440, 554, 659, 880];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.3);
+                });
+            }
+        };
 
-        // Color Themes
-        const juiceColors = [
-            { name: "Green Juice", color: 0x2ecc71, hex: "#2ecc71" },
-            { name: "Red Juice", color: 0xe74c3c, hex: "#e74c3c" },
-            { name: "Yellow Juice", color: 0xf1c40f, hex: "#f1c40f" },
-            { name: "Purple Juice", color: 0x9b59b6, hex: "#9b59b6" },
-            { name: "Blue Juice", color: 0x3498db, hex: "#3498db" }
+        const JUICE_COLORS = [
+            { id: 'green', hex: 0x2ecc71 },
+            { id: 'red', hex: 0xe74c3c },
+            { id: 'yellow', hex: 0xf1c40f },
+            { id: 'blue', hex: 0x3498db },
+            { id: 'purple', hex: 0x9b59b6 }
         ];
-        let currentColorIndex = 0;
 
-        // Obstacles & Collectibles arrays
-        let obstacles = [];
-        let collectibles = [];
-        let colorGates = [];
-        let giantGirl;
-        let giantDancing = false;
+        let currentJuiceColor = JUICE_COLORS[0];
+        let scene, camera, renderer;
+        let playerGroup, glassMesh, juiceLevelMesh;
+        let giantBoyGroup, boyArmL, boyArmR;
+        let trackLength = 220;
+        let isPlaying = false;
+        let isDancing = false;
         let danceTimer = 0;
 
-        // Audio Context for Sound FX
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
+        let currentLevel = 1;
+        let score = 0;
+        let juiceVolume = 100;
+        let playerPos = { x: 0, z: 0 };
+        let targetX = 0;
 
-            if (type === 'collect') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } else if (type === 'hit') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.linearRampToValueAtTime(60, now + 0.2);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
-            } else if (type === 'win') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.setValueAtTime(450, now + 0.1);
-                osc.frequency.setValueAtTime(600, now + 0.2);
-                gain.gain.setValueAtTime(0.25, now);
-                gain.gain.linearRampToValueAtTime(0, now + 0.35);
-                osc.start(now);
-                osc.stop(now + 0.35);
-            }
-        }
+        let forwardSpeed = 0.14;
+        const laneLimit = 2.4;
 
-        // Initialize Three.js Scene
+        let hopTime = 0;
+        const hopFrequency = 6.5;
+        const hopHeight = 0.5;
+
+        let colorGates = [];
+        let collectibles = [];
+        let obstacles = [];
+
+        let isDragging = false;
+        let prevTouchX = 0;
+
         function init() {
             const container = document.getElementById('canvas-container');
-            
+
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 4.5, -6);
-            camera.lookAt(0, 1.5, 2);
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 300);
+            camera.position.set(0, 4.5, -7.5);
+            camera.lookAt(0, 1.5, 4);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(20, 40, -20);
-            dirLight.castShadow = true;
-            scene.add(dirLight);
+            const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            sunLight.position.set(15, 30, -10);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
 
-            buildEnvironment();
             createPlayer();
-            loadLevel(currentLevel);
+            setupInput();
+            startLevel(1);
 
-            // Event Listeners for controls
             window.addEventListener('resize', onWindowResize);
-            
-            let isDragging = false;
-            let startX = 0;
-
-            window.addEventListener('pointerdown', (e) => {
-                isDragging = true;
-                startX = e.clientX;
-            });
-
-            window.addEventListener('pointermove', (e) => {
-                if (!isDragging || !gameActive) return;
-                const deltaX = (e.clientX - startX) * 0.008;
-                targetX = Math.max(-2.2, Math.min(2.2, targetX + deltaX));
-                startX = e.clientX;
-            });
-
-            window.addEventListener('pointerup', () => { isDragging = false; });
-
-            // Keyboard support
-            window.addEventListener('keydown', (e) => {
-                if (!gameActive) return;
-                if (e.key === 'ArrowLeft' || e.key === 'a') targetX = Math.max(-2.2, targetX - 0.6);
-                if (e.key === 'ArrowRight' || e.key === 'd') targetX = Math.min(2.2, targetX + 0.6);
-            });
-
-            // Start game button trigger (auto start on load for smooth UX)
-            startGame();
             animate();
         }
 
-        // Build Environment (Track, Palm Trees, Finish Line)
-        function buildEnvironment() {
-            // Road Track
-            const roadGeo = new THREE.BoxGeometry(6, 0.2, trackLength + 30);
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 0.9 });
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            road.position.set(0, -0.1, trackLength / 2 - 10);
-            road.receiveShadow = true;
-            scene.add(road);
+        function buildTrack(level) {
+            colorGates.forEach(g => scene.remove(g));
+            collectibles.forEach(c => scene.remove(c));
+            obstacles.forEach(o => scene.remove(o));
+            colorGates = [];
+            collectibles = [];
+            obstacles = [];
 
-            // Palm Trees along the road
-            for (let z = 5; z < trackLength; z += 12) {
-                createPalmTree(-4.5, z);
-                createPalmTree(4.5, z);
+            if (giantBoyGroup) scene.remove(giantBoyGroup);
+
+            forwardSpeed = 0.12 + level * 0.03;
+            trackLength = 200 + level * 40;
+
+            const existingTrack = scene.getObjectByName("track");
+            if (existingTrack) scene.remove(existingTrack);
+
+            const trackGeo = new THREE.PlaneGeometry(6, trackLength);
+            const trackMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+            const track = new THREE.Mesh(trackGeo, trackMat);
+            track.name = "track";
+            track.rotation.x = -Math.PI / 2;
+            track.position.set(0, 0, trackLength / 2 - 5);
+            scene.add(track);
+
+            const finishZ = trackLength - 15;
+            const archGeo = new THREE.TorusGeometry(3.2, 0.25, 12, 24, Math.PI);
+            const archMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f });
+            const arch = new THREE.Mesh(archGeo, archMat);
+            arch.position.set(0, 0, finishZ);
+            scene.add(arch);
+
+            createGiantBoyCharacter(finishZ + 6);
+
+            let colorIdx = 0;
+            for (let z = 25; z < finishZ - 15; z += 24) {
+                const targetColor = JUICE_COLORS[(colorIdx++) % JUICE_COLORS.length];
+                spawnColorGate(z, targetColor);
+                spawnCups(z + 8, targetColor);
+                spawnObstacle(z + 16, level);
             }
-
-            // Finish Line Arch & Giant Girl
-            createFinishArea();
         }
 
-        function createPalmTree(x, z) {
-            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 5, 6);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.set(x, 2.5, z);
-            scene.add(trunk);
+        function createGiantBoyCharacter(zPos) {
+            giantBoyGroup = new THREE.Group();
+            giantBoyGroup.position.set(0, 0, zPos);
+            giantBoyGroup.scale.set(2.0, 2.0, 2.0);
 
-            // Leaves
-            for (let i = 0; i < 5; i++) {
-                const leafGeo = new THREE.ConeGeometry(1.2, 0.2, 4);
-                const leafMat = new THREE.MeshStandardMaterial({ color: 0x27ae60 });
-                const leaf = new THREE.Mesh(leafGeo, leafMat);
-                leaf.position.set(x, 5, z);
-                leaf.rotation.z = (i * 72 * Math.PI) / 180;
-                leaf.rotation.x = 0.3;
-                scene.add(leaf);
-            }
-        }
-
-        // Create Juice Glass Character
-        function createPlayer() {
-            player = new THREE.Group();
-
-            // Glass Body
-            const glassGeo = new THREE.CylinderGeometry(0.5, 0.35, 1.4, 16);
-            const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, roughness: 0.1, transmission: 0.9 });
-            const glassMesh = new THREE.Mesh(glassGeo, glassMat);
-            glassMesh.position.y = 0.7;
-            player.add(glassMesh);
-
-            // Juice inside
-            const juiceGeo = new THREE.CylinderGeometry(0.48, 0.33, 1.2, 16);
-            const juiceMat = new THREE.MeshStandardMaterial({ color: juiceColors[currentColorIndex].color, roughness: 0.3 });
-            player.juiceMesh = new THREE.Mesh(juiceGeo, juiceMat);
-            player.juiceMesh.position.y = 0.6;
-            player.add(player.juiceMesh);
-
-            // Eyes & Smile (Face)
-            const eyeGeo = new THREE.SphereGeometry(0.08, 8, 8);
-            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-            
-            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-            leftEye.position.set(-0.18, 0.9, 0.4);
-            player.add(leftEye);
-
-            const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-            rightEye.position.set(0.18, 0.9, 0.4);
-            player.add(rightEye);
-
-            // Straw
-            const strawGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8);
-            const strawMat = new THREE.MeshStandardMaterial({ color: 0xe74c3c });
-            const straw = new THREE.Mesh(strawGeo, strawMat);
-            straw.position.set(0.2, 1.4, 0);
-            straw.rotation.z = -0.3;
-            player.add(straw);
-
-            player.position.set(0, 0, 0);
-            scene.add(player);
-        }
-
-        // Create Finish Line & Giant Girl Boss
-        function createFinishArea() {
-            const finishZ = trackLength - 5;
-
-            // Giant Girl Group
-            giantGirl = new THREE.Group();
-            
-            // Body / Dress
-            const dressGeo = new THREE.ConeGeometry(1.2, 3, 16);
-            const dressMat = new THREE.MeshStandardMaterial({ color: 0xe91e63 });
-            const dress = new THREE.Mesh(dressGeo, dressMat);
-            dress.position.y = 1.5;
-            giantGirl.add(dress);
+            // Shirt / Body
+            const bodyGeo = new THREE.BoxGeometry(1.0, 1.4, 0.6);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3498db });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 1.2;
+            giantBoyGroup.add(body);
 
             // Head
-            const headGeo = new THREE.SphereGeometry(0.7, 16, 16);
-            const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
-            const head = new THREE.Mesh(headGeo, headMat);
-            head.position.y = 3.5;
-            giantGirl.add(head);
+            const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.position.y = 2.3;
+            giantBoyGroup.add(head);
 
-            giantGirl.position.set(0, 0, finishZ + 8);
-            scene.add(giantGirl);
+            // Hair
+            const hairGeo = new THREE.BoxGeometry(1.05, 0.3, 1.05);
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
+            const hair = new THREE.Mesh(hairGeo, hairMat);
+            hair.position.y = 2.6;
+            giantBoyGroup.add(hair);
+
+            // Arms
+            const armGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.0, 8);
+            boyArmL = new THREE.Mesh(armGeo, skinMat);
+            boyArmL.position.set(-0.7, 1.4, 0);
+            boyArmR = new THREE.Mesh(armGeo, skinMat);
+            boyArmR.position.set(0.7, 1.4, 0);
+            giantBoyGroup.add(boyArmL, boyArmR);
+
+            scene.add(giantBoyGroup);
         }
 
-        // Load Level Obstacles & Collectibles
-        function loadLevel(lvl) {
-            // Clear old obstacles
-            obstacles.forEach(o => scene.remove(o.mesh));
-            collectibles.forEach(c => scene.remove(c.mesh));
-            colorGates.forEach(g => scene.remove(g.mesh));
-            obstacles = [];
-            collectibles = [];
-            colorGates = [];
-
-            forwardSpeed = forwardSpeeds[lvl];
-            document.getElementById('level-badge').innerText = `LVL ${lvl}`;
-
-            // Generate Obstacles & Collectibles based on level
-            let count = 6 + lvl * 3;
-            for (let i = 1; i <= count; i++) {
-                let zPos = i * (trackLength / (count + 2));
-
-                // Add Color Gate
-                if (i % 2 === 0) {
-                    let cIndex = Math.floor(Math.random() * juiceColors.length);
-                    createColorGate(zPos, cIndex);
-                }
-
-                // Add Collectibles (Juice Cups)
-                for (let c = -1; c <= 1; c++) {
-                    let cIndex = Math.floor(Math.random() * juiceColors.length);
-                    createCollectible(c * 1.5, zPos + 3, cIndex);
-                }
-
-                // Add Obstacles (Spike Gates / Hammers)
-                if (i % 3 === 0) {
-                    createObstacle(zPos);
-                }
-            }
+        function spawnColorGate(zPos, targetColor) {
+            const gate = new THREE.Group();
+            gate.position.set(0, 0, zPos);
+            const ringGeo = new THREE.TorusGeometry(2.2, 0.2, 12, 24);
+            const ringMat = new THREE.MeshStandardMaterial({ color: targetColor.hex, emissive: targetColor.hex, emissiveIntensity: 0.5 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.y = 1.4;
+            gate.add(ring);
+            gate.userData = { color: targetColor };
+            scene.add(gate);
+            colorGates.push(gate);
         }
 
-        function createCollectible(x, z, colorIdx) {
-            const group = new THREE.Group();
-            const glassGeo = new THREE.CylinderGeometry(0.3, 0.2, 0.9, 12);
-            const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, transmission: 0.8 });
-            const glass = new THREE.Mesh(glassGeo, glassMat);
-            group.add(glass);
+        function spawnCups(zPos, targetColor) {
+            [-1.6, 0, 1.6].forEach((xPos, idx) => {
+                const isMatch = (idx === 1);
+                const colorObj = isMatch ? targetColor : JUICE_COLORS[Math.floor(Math.random() * JUICE_COLORS.length)];
 
-            const juiceGeo = new THREE.CylinderGeometry(0.28, 0.18, 0.7, 12);
-            const juiceMat = new THREE.MeshStandardMaterial({ color: juiceColors[colorIdx].color });
-            const juice = new THREE.Mesh(juiceGeo, juiceMat);
-            juice.position.y = -0.05;
-            group.add(juice);
-
-            group.position.set(x, 0.45, z);
-            scene.add(group);
-            collectibles.push({ mesh: group, colorIdx: z, collected: false });
+                const cup = new THREE.Group();
+                cup.position.set(xPos, 0.7, zPos);
+                const cupGeo = new THREE.CylinderGeometry(0.35, 0.22, 0.8, 12);
+                const cupMat = new THREE.MeshStandardMaterial({ color: colorObj.hex });
+                const mesh = new THREE.Mesh(cupGeo, cupMat);
+                cup.add(mesh);
+                cup.userData = { color: colorObj, isMatching: isMatch };
+                scene.add(cup);
+                collectibles.push(cup);
+            });
         }
 
-        function createObstacle(z) {
-            const group = new THREE.Group();
-            const barGeo = new THREE.BoxGeometry(5, 0.8, 0.4);
-            const barMat = new THREE.MeshStandardMaterial({ color: 0x8e44ad });
-            const bar = new THREE.Mesh(barGeo, barMat);
-            bar.position.y = 0.8;
-            group.add(bar);
-
-            group.position.set(0, 0, z);
-            scene.add(group);
-            obstacles.push({ mesh: group, z: z });
+        function spawnObstacle(zPos, level) {
+            const obs = new THREE.Group();
+            obs.position.set((Math.random() - 0.5) * 3.0, 0.4, zPos);
+            const spikeGeo = new THREE.ConeGeometry(0.4, 1.0, 8);
+            const spikeMat = new THREE.MeshStandardMaterial({ color: 0xe67e22 });
+            const spike = new THREE.Mesh(spikeGeo, spikeMat);
+            obs.add(spike);
+            scene.add(obs);
+            obstacles.push(obs);
         }
 
-        function createColorGate(z, colorIdx) {
-            const archGeo = new THREE.TorusGeometry(2.5, 0.15, 8, 32, Math.PI);
-            const archMat = new THREE.MeshStandardMaterial({ color: juiceColors[colorIdx].color, emissive: juiceColors[colorIdx].color, emissiveIntensity: 0.5 });
-            const arch = new THREE.Mesh(archGeo, archMat);
-            arch.rotation.z = Math.PI / 2;
-            arch.position.set(0, 0, z);
-            scene.add(arch);
-            colorGates.push({ mesh: arch, z: z, colorIdx: colorIdx });
+        function createPlayer() {
+            playerGroup = new THREE.Group();
+            const glassGeo = new THREE.CylinderGeometry(0.65, 0.4, 1.6, 16, 1, true);
+            const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, transmission: 0.8, side: THREE.DoubleSide });
+            glassMesh = new THREE.Mesh(glassGeo, glassMat);
+            glassMesh.position.y = 1.0;
+            playerGroup.add(glassMesh);
+
+            const juiceGeo = new THREE.CylinderGeometry(0.6, 0.38, 1.4, 16);
+            const juiceMat = new THREE.MeshStandardMaterial({ color: currentJuiceColor.hex });
+            juiceLevelMesh = new THREE.Mesh(juiceGeo, juiceMat);
+            glassMesh.add(juiceLevelMesh);
+
+            scene.add(playerGroup);
         }
 
-        function startGame() {
-            gameActive = true;
-            playerZ = 0;
-            playerX = 0;
-            targetX = 0;
-            score = 0;
-            giantDancing = false;
+        function setupInput() {
+            const onDown = (e) => {
+                if (!isPlaying) return;
+                isDragging = true;
+                prevTouchX = e.touches ? e.touches[0].clientX : e.clientX;
+                AudioFX.init();
+            };
+            const onMove = (e) => {
+                if (!isDragging || !isPlaying) return;
+                const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+                targetX += (currentX - prevTouchX) * 0.01;
+                targetX = Math.max(-laneLimit, Math.min(laneLimit, targetX));
+                prevTouchX = currentX;
+            };
+            const onUp = () => { isDragging = false; };
+
+            window.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            window.addEventListener('touchstart', onDown);
+            window.addEventListener('touchmove', onMove);
+            window.addEventListener('touchend', onUp);
+
+            window.addEventListener('keydown', (e) => {
+                if (!isPlaying) return;
+                if (e.key === 'ArrowLeft' || e.key === 'a') targetX = Math.max(-laneLimit, targetX - 0.5);
+                if (e.key === 'ArrowRight' || e.key === 'd') targetX = Math.min(laneLimit, targetX + 0.5);
+            });
+
+            document.getElementById('next-level-btn').addEventListener('click', () => startLevel(currentLevel + 1));
+            document.getElementById('restart-btn').addEventListener('click', () => startLevel(currentLevel));
+        }
+
+        function startLevel(lvl) {
+            AudioFX.init();
+            currentLevel = Math.min(3, lvl);
+            isPlaying = true;
+            isDancing = false;
             danceTimer = 0;
-            document.getElementById('end-screen').classList.add('hidden');
-            giantGirl.position.y = 0;
+            juiceVolume = 100;
+            playerPos = { x: 0, z: 0 };
+            targetX = 0;
+            hopTime = 0;
+
+            document.getElementById('action-panel').classList.add('hidden');
+            document.getElementById('level-badge').innerText = `LVL ${currentLevel}`;
+
+            buildTrack(currentLevel);
         }
 
-        // Game Loop
+        function finishReached() {
+            isPlaying = false;
+            isDancing = true;
+            danceTimer = 0;
+            AudioFX.playWin();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            AudioFX.playHit();
+            document.getElementById('next-level-btn').classList.add('hidden');
+            document.getElementById('action-panel').classList.remove('hidden');
+        }
+
         function animate() {
             requestAnimationFrame(animate);
 
-            if (gameActive) {
-                // Move player forward
-                playerZ += forwardSpeed;
-                playerX += (targetX - playerX) * 0.1;
-                player.position.x = playerX;
-                player.position.z = playerZ;
+            if (isPlaying) {
+                playerPos.x += (targetX - playerPos.x) * 0.15;
+                playerPos.z += forwardSpeed;
 
-                // Hopping / Bouncing Animation
-                hopAngle += hopSpeed;
-                let currentHop = Math.abs(Math.sin(hopAngle)) * hopHeight;
-                player.position.y = currentHop;
-                player.rotation.z = Math.sin(hopAngle * 0.5) * 0.05;
+                hopTime += 0.016 * hopFrequency;
+                const hopY = Math.abs(Math.sin(hopTime)) * hopHeight;
 
-                // Camera follow
-                camera.position.z = playerZ - 6;
-                camera.position.x = playerX * 0.5;
-
-                // Update Progress bar
-                let progress = Math.min(100, (playerZ / (trackLength - 5)) * 100);
-                document.getElementById('progress-bar').style.width = `${progress}%`;
-
-                // Check Collisions with Collectibles
-                collectibles.forEach(col => {
-                    if (!col.collected && Math.abs(player.position.z - col.mesh.position.z) < 0.8 && Math.abs(player.position.x - col.mesh.position.x) < 0.8) {
-                        col.collected = true;
-                        scene.remove(col.mesh);
-                        score += 20;
-                        document.getElementById('score-val').innerText = score;
-                        playSound('collect');
-                    }
-                });
-
-                // Check Collisions with Obstacles
-                obstacles.forEach(obs => {
-                    if (!obs.hit && Math.abs(player.position.z - obs.z) < 0.6 && Math.abs(player.position.x) < 2.0) {
-                        obs.hit = true;
-                        score = Math.max(0, score - 30);
-                        document.getElementById('score-val').innerText = score;
-                        playSound('hit');
-                    }
-                });
-
-                // Check Color Gates
-                colorGates.forEach(gate => {
-                    if (!gate.passed && Math.abs(player.position.z - gate.z) < 0.5) {
-                        gate.passed = true;
-                        currentColorIndex = gate.colorIdx;
-                        player.juiceMesh.material.color.setHex(juiceColors[currentColorIndex].color);
-                        document.getElementById('color-indicator').style.backgroundColor = juiceColors[currentColorIndex].hex;
-                        document.getElementById('color-text').innerText = juiceColors[currentColorIndex].name;
-                        document.getElementById('color-text').style.color = juiceColors[currentColorIndex].hex;
-                    }
-                });
-
-                // Check Finish Line
-                if (playerZ >= trackLength - 5) {
-                    gameActive = false;
-                    giantDancing = true;
-                    danceTimer = 0;
-                    playSound('win');
+                if (Math.sin(hopTime) < 0.1 && Math.sin(hopTime - 0.08) >= 0.1) {
+                    AudioFX.playHop();
                 }
-            } else if (giantDancing) {
-                // Giant girl dancing/jumping animation at finish line
-                danceTimer += 0.08;
-                giantGirl.position.y = Math.abs(Math.sin(danceTimer)) * 1.5;
-                giantGirl.rotation.y += 0.05;
 
-                if (danceTimer > 4.5) {
-                    giantDancing = false;
-                    showEndScreen();
+                playerGroup.position.set(playerPos.x, hopY, playerPos.z);
+
+                camera.position.z = playerPos.z - 7;
+                camera.position.x = playerPos.x * 0.3;
+                camera.lookAt(playerPos.x * 0.3, 1.4, playerPos.z + 4);
+
+                const finishZ = trackLength - 15;
+                if (playerPos.z >= finishZ) finishReached();
+
+                colorGates.forEach(gate => {
+                    if (gate.visible && Math.abs(playerPos.z - gate.position.z) < 0.8) {
+                        gate.visible = false;
+                        currentJuiceColor = gate.userData.color;
+                        juiceLevelMesh.material.color.setHex(currentJuiceColor.hex);
+                    }
+                });
+
+                collectibles.forEach(item => {
+                    if (item.visible && Math.abs(playerPos.z - item.position.z) < 0.8 && Math.abs(playerPos.x - item.position.x) < 0.8) {
+                        item.visible = false;
+                        if (item.userData.color.id === currentJuiceColor.id) {
+                            AudioFX.playCollect();
+                            score += 20;
+                            document.getElementById('score-text').innerText = score;
+                        } else {
+                            AudioFX.playHit();
+                            juiceVolume -= 25;
+                            if (juiceVolume <= 0) gameOver();
+                        }
+                    }
+                });
+
+                obstacles.forEach(obs => {
+                    if (Math.abs(playerPos.z - obs.position.z) < 0.8 && Math.abs(playerPos.x - obs.position.x) < 0.8) {
+                        obs.position.z -= 500;
+                        AudioFX.playHit();
+                        juiceVolume -= 30;
+                        if (juiceVolume <= 0) gameOver();
+                    }
+                });
+
+                const progress = Math.min(100, (playerPos.z / finishZ) * 100);
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+            } else if (isDancing) {
+                // Giant Boy Dancing Animation at finish line
+                danceTimer += 0.05;
+                giantBoyGroup.position.y = Math.abs(Math.sin(danceTimer * 3)) * 1.2;
+                boyArmL.rotation.z = Math.PI / 3 + Math.sin(danceTimer * 5) * 0.5;
+                boyArmR.rotation.z = -Math.PI / 3 - Math.sin(danceTimer * 5) * 0.5;
+
+                // After dancing for a short period, show Next Level / Try Again buttons
+                if (danceTimer > 4.0) {
+                    isDancing = false;
+                    if (currentLevel < 3) {
+                        document.getElementById('next-level-btn').classList.remove('hidden');
+                    }
+                    document.getElementById('action-panel').classList.remove('hidden');
                 }
             }
 
             renderer.render(scene, camera);
-        }
-
-        function showEndScreen() {
-            const endScreen = document.getElementById('end-screen');
-            const endTitle = document.getElementById('end-title');
-            const endSubtitle = document.getElementById('end-subtitle');
-            const finalScore = document.getElementById('final-score');
-            const actionBtn = document.getElementById('action-btn');
-
-            finalScore.innerText = score;
-
-            if (currentLevel < 3) {
-                endTitle.innerText = `লেভেল ${currentLevel} বিজয়ী!`;
-                endSubtitle.innerText = "দৈত্য মেয়েটি উল্লাসে লাফিয়ে উঠছে!";
-                actionBtn.innerText = "পরবর্তী লেভেল →";
-                actionBtn.onclick = () => {
-                    currentLevel++;
-                    loadLevel(currentLevel);
-                    startGame();
-                };
-            } else {
-                endTitle.innerText = "অভিনন্দন! গেম সম্পন্ন!";
-                endSubtitle.innerText = "আপনি সমস্ত লেভেল সফলভাবে পার করেছেন!";
-                actionBtn.innerText = "আবার খেলুন ↺";
-                actionBtn.onclick = () => {
-                    currentLevel = 1;
-                    loadLevel(currentLevel);
-                    startGame();
-                };
-            }
-            endScreen.classList.remove('hidden');
         }
 
         function onWindowResize() {
