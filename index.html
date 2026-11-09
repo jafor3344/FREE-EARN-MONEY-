@@ -52,15 +52,15 @@
           <div>◀ ▶ বাটন / ← → কী = স্টিয়ারিং</div>
           <div>GO বাটন / ↑ বা স্পেস ধরে রাখুন = গতি বাড়বে</div>
           <div>লাল বাটন / ↓ = ব্রেক</div>
-          <div style="color:#ffd54f;">সোনালি কয়েন সংগ্রহ করুন, বাধা এড়িয়ে চলুন!</div>
+          <div style="color:#ffd54f;">৪০ সেকেন্ডে ফিনিশ লাইনে পৌঁছান!</div>
         </div>
         <button id="startBtn" class="ctl-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:17px;font-weight:700;padding:12px 36px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(34,197,94,.4);cursor:pointer;">শুরু করুন</button>
       </div>
       <div id="overPanel" style="text-align:center;color:#fff;padding:24px;max-width:320px;display:none;">
-        <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#ef4444,#b91c1c);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(239,68,68,.45);">
+        <div id="overIcon" style="width:64px;height:64px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#ef4444,#b91c1c);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(239,68,68,.45);">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
         </div>
-        <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">দুর্ঘটনা হয়েছে!</h1>
+        <h1 id="overTitle" style="font-size:24px;font-weight:700;margin-bottom:6px;">দুর্ঘটনা হয়েছে!</h1>
         <div style="display:flex;gap:10px;justify-content:center;margin:14px 0;">
           <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:10px 16px;min-width:84px;">
             <div style="font-size:10px;color:#94a3b8;">দূরত্ব</div>
@@ -103,6 +103,8 @@
   var overlay=document.getElementById('overlay');
   var readyPanel=document.getElementById('readyPanel');
   var overPanel=document.getElementById('overPanel');
+  var overTitle=document.getElementById('overTitle');
+  var overIcon=document.getElementById('overIcon');
 
   function rand(a,b){return a+Math.random()*(b-a);}
   function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -124,7 +126,9 @@
   }
 
   var scene,cam,rdr,car,wheels=[],roadTex,grassTex,trees=[],obstacles=[],coinsArr=[],particles=[];
+  var dancingGirls=[], finishArch=null, finishLineMesh=null;
   var state='ready',speed=10,dist=0,coins=0,best=0,carX=0,steer=0,spawnTimer=1,shake=0,clock=0;
+  var playTime=0, finishSpawned=false, finishZ=-9999;
   var input={left:false,right:false,accel:false,brake:false};
   try{best=parseInt(localStorage.getItem('turbo3d_best')||'0',10)||0;}catch(e){}
 
@@ -225,6 +229,87 @@
     function makeTree(leafy){var g=new THREE.Group();var tr=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.18,0.7,6),matTrunk);tr.position.y=0.35;g.add(tr);if(leafy){var c=new THREE.Mesh(new THREE.IcosahedronGeometry(0.85,0),matLeaf);c.position.y=1.3;c.castShadow=false;g.add(c);}else{var c1=new THREE.Mesh(new THREE.ConeGeometry(0.75,1.3,6),matPine);c1.position.y=1.15;g.add(c1);var c2=new THREE.Mesh(new THREE.ConeGeometry(0.55,1.0,6),matPine);c2.position.y=1.9;g.add(c2);}return g;}
     for(var i=0;i<34;i++){var t=makeTree(Math.random()<.4);var side=Math.random()<.5;t.position.set(side?rand(-17,-8):rand(8,17),0,rand(-200,10));var sc=rand(.8,1.5);t.scale.set(sc,sc,sc);scene.add(t);trees.push({m:t,side:side});}
 
+    // --- Giant Girl / Doll Creation ---
+    var dressColors = [0xec4899, 0x8b5cf6, 0x06b6d4, 0xf59e0b, 0x10b981];
+    function makeGiantGirl(colorHex){
+      var g = new THREE.Group();
+      // Skin material & Hair/Dress material
+      var matSkin = new THREE.MeshLambertMaterial({color:0xffdbac});
+      var matHair = new THREE.MeshLambertMaterial({color:0x222222});
+      var matDress = new THREE.MeshLambertMaterial({color:colorHex});
+      var matLeg = new THREE.MeshLambertMaterial({color:0x334155});
+
+      // Head (Sphere)
+      var head = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 16), matSkin);
+      head.position.y = 5.2; g.add(head);
+
+      // Hair (Top Hair Cylinder/Cap)
+      var hair = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.8, 16), matHair);
+      hair.position.y = 5.7; g.add(hair);
+
+      // Body / Dress (Cylinder / Cone)
+      var body = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.4, 2.4, 12), matDress);
+      body.position.y = 3.2; g.add(body);
+
+      // Arms (Left & Right)
+      var lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.8, 8), matSkin);
+      lArm.rotation.z = Math.PI / 3; lArm.position.set(-1.4, 3.8, 0); g.add(lArm);
+      var rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.8, 8), matSkin);
+      rArm.rotation.z = -Math.PI / 3; rArm.position.set(1.4, 3.8, 0); g.add(rArm);
+
+      // Legs
+      var lLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 2.0, 8), matLeg);
+      lLeg.position.set(-0.55, 1.0, 0); g.add(lLeg);
+      var rLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 2.0, 8), matLeg);
+      rLeg.position.set(0.55, 1.0, 0); g.add(rLeg);
+
+      g.scale.set(1.5, 1.5, 1.5);
+      return {group:g, lArm:lArm, rArm:rArm, offset:rand(0, 10)};
+    }
+
+    // Spawn 8 Giant Girls along the road sides
+    for(var i=0; i<8; i++){
+      var side = (i % 2 === 0);
+      var girlObj = makeGiantGirl(dressColors[i % dressColors.length]);
+      var gz = -25 * i - 10;
+      var gx = side ? rand(-12, -9) : rand(9, 12);
+      girlObj.group.position.set(gx, 0, gz);
+      scene.add(girlObj.group);
+      dancingGirls.push({obj:girlObj, side:side, baseZ:gz});
+    }
+
+    // --- Finish Line Arch Creation ---
+    finishArch = new THREE.Group();
+    var matPole = new THREE.MeshLambertMaterial({color:0xe2e8f0});
+    var matBanner = new THREE.MeshLambertMaterial({color:0xef4444});
+
+    var p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 7, 12), matPole);
+    p1.position.set(-6, 3.5, 0); finishArch.add(p1);
+    var p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 7, 12), matPole);
+    p2.position.set(6, 3.5, 0); finishArch.add(p2);
+    var topBar = new THREE.Mesh(new THREE.BoxGeometry(12.5, 1.2, 0.5), matBanner);
+    topBar.position.set(0, 6.5, 0); finishArch.add(topBar);
+
+    // Finish Road Checker Texture
+    var finishTex = canvasTex(128, 128, function(ctx, w, h){
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = '#000000';
+      var sz = 32;
+      for(var y=0; y<h; y+=sz){
+        for(var x=0; x<w; x+=sz){
+          if((x/sz + y/sz)%2===0) ctx.fillRect(x,y,sz,sz);
+        }
+      }
+    });
+    finishTex.wrapS = finishTex.wrapT = THREE.RepeatWrapping; finishTex.repeat.set(2, 1);
+    finishLineMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 4), new THREE.MeshBasicMaterial({map:finishTex}));
+    finishLineMesh.rotation.x = -Math.PI / 2;
+    finishLineMesh.position.set(0, 0.02, 0);
+    finishArch.add(finishLineMesh);
+
+    finishArch.position.set(0, 0, -9999);
+    scene.add(finishArch);
+
     // obstacles pool
     function makeCone(){var g=new THREE.Group();var base=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.08,0.55),matConeW);base.position.y=0.04;g.add(base);var c=new THREE.Mesh(new THREE.ConeGeometry(0.34,0.85,10),matCone);c.position.y=0.5;g.add(c);var band=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.24,0.14,10),matConeW);band.position.y=0.52;g.add(band);g.traverse(function(o){if(o.isMesh)o.castShadow=true;});return g;}
     function makeBarrier(){var g=new THREE.Group();var b=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.7,0.35),matBar);b.position.y=0.45;b.castShadow=true;g.add(b);var l1=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.5,0.15),matWheel);l1.position.set(-0.9,0.25,0);g.add(l1);var l2=l1.clone();l2.position.x=0.9;g.add(l2);return g;}
@@ -258,6 +343,8 @@
 
   function startGame(){
     state='playing';speed=14;dist=0;coins=0;carX=0;steer=0;spawnTimer=0.8;shake=0;
+    playTime=0; finishSpawned=false; finishZ=-9999;
+    finishArch.position.set(0,0,-9999);
     obstacles.forEach(function(o){o.active=false;o.g.visible=false;});
     coinsArr.forEach(function(c){c.active=false;c.m.visible=false;});
     overlay.style.display='none';
@@ -267,9 +354,26 @@
     if(state!=='playing')return;
     state='over';shake=0.7;
     for(var i=0;i<particles.length;i++){var p=particles[i];p.life=rand(.6,1.4);p.vx=rand(-4,4);p.vy=rand(2,7);p.vz=rand(-3,3);p.m.position.set(carX+rand(-.5,.5),rand(.5,1.2),rand(-1,1));p.m.visible=true;}
+    showEndPanel(false);
+  }
+
+  function gameWon(){
+    if(state!=='playing')return;
+    state='over';
+    showEndPanel(true);
+  }
+
+  function showEndPanel(isWin){
     var score=Math.round(dist)+coins*25;
     if(score>best){best=score;try{localStorage.setItem('turbo3d_best',String(best));}catch(e){}}
     setTimeout(function(){
+      if(isWin){
+        overTitle.textContent = "অভিনন্দন! আপনি জিতেছেন!";
+        overIcon.style.background = "linear-gradient(135deg,#22c55e,#16a34a)";
+      } else {
+        overTitle.textContent = "দুর্ঘটনা হয়েছে!";
+        overIcon.style.background = "linear-gradient(135deg,#ef4444,#b91c1c)";
+      }
       document.getElementById('finalDist').textContent=Math.round(dist)+' m';
       document.getElementById('finalCoins').textContent=coins;
       document.getElementById('finalScore').textContent=score;
@@ -280,6 +384,7 @@
   }
 
   function spawnWave(){
+    if(finishSpawned) return; // Stop spawning obstacles near finish line
     var lanes=shuffle([-3.33,0,3.33]);
     var n=Math.random()<.35?2:1;
     var blocked=[];
@@ -305,6 +410,14 @@
     var worldSpeed=state==='playing'?speed:(state==='ready'?10:Math.max(0,speed));
 
     if(state==='playing'){
+      playTime += dt;
+      // After 40 seconds, spawn Finish Line
+      if(playTime >= 40 && !finishSpawned){
+        finishSpawned = true;
+        finishZ = -180;
+        finishArch.position.set(0, 0, finishZ);
+      }
+
       var maxSpeed=55+Math.min(30,dist*0.015);
       var target=input.brake?0:(input.accel?maxSpeed:12);
       var rate=input.brake?30:(input.accel&&speed<target?20:6);
@@ -318,6 +431,15 @@
       dist+=speed*dt;
       spawnTimer-=dt;
       if(spawnTimer<=0){spawnWave();spawnTimer=rand(0.5,0.9)*Math.max(0.5,60/(speed+30));}
+
+      // Check Finish Line crossing
+      if(finishSpawned){
+        finishZ += worldSpeed * dt;
+        finishArch.position.z = finishZ;
+        if(finishZ >= 0){
+          gameWon();
+        }
+      }
     } else if(state==='over'){
       speed+= (0-speed)*Math.min(1,dt*3);
     }
@@ -329,6 +451,20 @@
 
     // trees
     for(var i=0;i<trees.length;i++){var t=trees[i];t.m.position.z+=worldSpeed*dt;if(t.m.position.z>16){t.m.position.z-=230;t.m.position.x=t.side?rand(-17,-8):rand(8,17);var sc=rand(.8,1.5);t.m.scale.set(sc,sc,sc);}}
+
+    // Dancing Girls animation & scroll
+    for(var i=0; i<dancingGirls.length; i++){
+      var dg = dancingGirls[i];
+      dg.obj.group.position.z += worldSpeed * dt;
+      if(dg.obj.group.position.z > 16){
+        dg.obj.group.position.z -= 200;
+      }
+      // Dancing Motion
+      var danceAngle = Math.sin(clock * 6 + dg.obj.offset) * 0.4;
+      dg.obj.lArm.rotation.z = Math.PI / 3 + danceAngle;
+      dg.obj.rArm.rotation.z = -Math.PI / 3 - danceAngle;
+      dg.obj.group.rotation.y = Math.sin(clock * 3 + dg.obj.offset) * 0.15;
+    }
 
     // clouds drift
     scene.children.forEach(function(o){if(o.isSprite&&o.material&&o.material.map&&o.scale.y<o.scale.x){o.position.x+=dt*0.7;if(o.position.x>50)o.position.x=-50;}});
