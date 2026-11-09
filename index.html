@@ -1,83 +1,85 @@
-<html style="margin:0;padding:0;width:100%;height:100%;overflow:hidden;">
+<html style="margin:0;padding:0;overflow:hidden;height:100%;">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-</head>
-<body style="margin:0;padding:0;width:100%;height:100vh;overflow:hidden;background:#0b1e2f;">
 <script>
 (function(){
   var s=document.createElement('style');
-  s.textContent='#gameWrap{user-select:none;-webkit-user-select:none;touch-action:none;font-family:"Hind Siliguri",sans-serif} .ctl-btn{touch-action:none;transition:transform .08s ease,filter .08s ease} .ctl-btn.pressed{transform:scale(.9);filter:brightness(1.25)} #overlay{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}';
+  s.textContent='html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#07131f;} #gameWrap{user-select:none;-webkit-user-select:none;touch-action:none;font-family:"Hind Siliguri",sans-serif} .ctl-btn{touch-action:none;transition:transform .08s ease,filter .08s ease} .ctl-btn.pressed{transform:scale(.9);filter:brightness(1.25)} #overlay{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}';
   document.head.appendChild(s);
 })();
 </script>
+</head>
+<body style="margin:0;padding:0;width:100%;height:100%;overflow:hidden;">
+<div style="background:linear-gradient(160deg,#0b1e2f,#07131f);width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;">
+  <div id="gameWrap" style="position:relative;width:100%;height:calc(100vh - 92px);overflow:hidden;background:#0b1622;box-sizing:border-box;">
 
-<div id="gameWrap" style="position:relative;width:100vw;height:100vh;overflow:hidden;background:#0b1622;margin:0;padding:0;">
+    <!-- 3D canvas host -->
+    <div id="canvasHost" style="position:relative;width:100%;height:100%;overflow:hidden;"></div>
 
-  <!-- 3D canvas host -->
-  <div id="canvasHost" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;z-index:1;"></div>
-
-  <!-- HUD -->
-  <div style="position:absolute;top:10px;left:0;right:0;display:flex;gap:8px;padding:0 10px;z-index:5;pointer-events:none;">
-    <div style="flex:1;background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 10px;color:#fff;">
-      <div style="font-size:11px;letter-spacing:.12em;color:#7dd3fc;font-weight:600;">টার্বো হাইওয়ে</div>
-      <div style="font-size:15px;font-weight:700;line-height:1.1;">3D রেসিং</div>
-    </div>
-    <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 12px;color:#fff;text-align:center;min-width:82px;">
-      <div style="font-size:10px;color:#94a3b8;font-weight:500;">গতি</div>
-      <div style="font-size:18px;font-weight:700;line-height:1.1;"><span id="speedVal">0</span><span style="font-size:10px;color:#94a3b8;font-weight:500;"> km/h</span></div>
-    </div>
-    <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 12px;color:#fff;text-align:center;min-width:82px;">
-      <div style="font-size:10px;color:#94a3b8;font-weight:500;">দূরত্ব</div>
-      <div style="font-size:18px;font-weight:700;line-height:1.1;"><span id="distVal">0</span><span style="font-size:10px;color:#94a3b8;font-weight:500;"> m</span></div>
-    </div>
-    <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:6px 10px;color:#ffd54f;text-align:center;min-width:54px;">
-      <div style="font-size:10px;color:#d4a017;font-weight:500;">কয়েন</div>
-      <div style="font-size:18px;font-weight:700;line-height:1.1;" id="coinVal">0</div>
-    </div>
-  </div>
-
-  <!-- start / gameover overlay -->
-  <div id="overlay" style="position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(5,15,28,.6);">
-    <div id="readyPanel" style="text-align:center;color:#fff;padding:24px;max-width:320px;">
-      <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#0ea5e9,#2563eb);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(37,99,235,.45);">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7 14h10M8 17v2M16 17v2"/><circle cx="8" cy="17" r="1.2" fill="#fff"/><circle cx="16" cy="17" r="1.2" fill="#fff"/></svg>
+    <!-- HUD -->
+    <div style="position:absolute;top:10px;left:0;right:0;display:flex;gap:8px;padding:0 10px;z-index:5;pointer-events:none;">
+      <div style="flex:1;background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 10px;color:#fff;">
+        <div style="font-size:11px;letter-spacing:.12em;color:#7dd3fc;font-weight:600;">টার্বো হাইওয়ে</div>
+        <div style="font-size:15px;font-weight:700;line-height:1.1;">3D রেসিং</div>
       </div>
-      <h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">টার্বো হাইওয়ে 3D</h1>
-      <p style="font-size:13px;color:#94a3b8;margin-bottom:16px;">সুন্দর পাহাড়ি পরিবেশে 3D গাড়ির গেম</p>
-      <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;font-size:12px;color:#cbd5e1;text-align:left;line-height:1.9;margin-bottom:18px;">
-        <div>◀ ▶ বাটন / ← → কী = স্টিয়ারিং</div>
-        <div>GO বাটন / ↑ বা স্পেস ধরে রাখুন = গতি বাড়বে</div>
-        <div>লাল বাটন / ↓ = ব্রেক</div>
-        <div style="color:#ffd54f;">সোনালি কয়েন সংগ্রহ করুন, বাধা এড়িয়ে চলুন!</div>
+      <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 12px;color:#fff;text-align:center;min-width:82px;">
+        <div style="font-size:10px;color:#94a3b8;font-weight:500;">গতি</div>
+        <div style="font-size:18px;font-weight:700;line-height:1.1;"><span id="speedVal">0</span><span style="font-size:10px;color:#94a3b8;font-weight:500;"> km/h</span></div>
       </div>
-      <button id="startBtn" class="ctl-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:17px;font-weight:700;padding:12px 36px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(34,197,94,.4);cursor:pointer;">শুরু করুন</button>
+      <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 12px;color:#fff;text-align:center;min-width:82px;">
+        <div style="font-size:10px;color:#94a3b8;font-weight:500;">দূরত্ব</div>
+        <div style="font-size:18px;font-weight:700;line-height:1.1;"><span id="distVal">0</span><span style="font-size:10px;color:#94a3b8;font-weight:500;"> m</span></div>
+      </div>
+      <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:6px 10px;color:#ffd54f;text-align:center;min-width:54px;">
+        <div style="font-size:10px;color:#d4a017;font-weight:500;">কয়েন</div>
+        <div style="font-size:18px;font-weight:700;line-height:1.1;" id="coinVal">0</div>
+      </div>
     </div>
-    <div id="overPanel" style="text-align:center;color:#fff;padding:24px;max-width:320px;display:none;">
-      <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#ef4444,#b91c1c);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(239,68,68,.45);">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
-      </div>
-      <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">দুর্ঘটনা হয়েছে!</h1>
-      <div style="display:flex;gap:10px;justify-content:center;margin:14px 0;">
-        <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:10px 16px;min-width:84px;">
-          <div style="font-size:10px;color:#94a3b8;">দূরত্ব</div>
-          <div style="font-size:20px;font-weight:700;" id="finalDist">0 m</div>
+
+    <!-- hint bar -->
+    <!-- start / gameover overlay -->
+    <div id="overlay" style="position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(5,15,28,.6);">
+      <div id="readyPanel" style="text-align:center;color:#fff;padding:24px;max-width:320px;">
+        <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#0ea5e9,#2563eb);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(37,99,235,.45);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M6 17l1.5-5h9L18 17M7 14h10M8 17v2M16 17v2"/><circle cx="8" cy="17" r="1.2" fill="#fff"/><circle cx="16" cy="17" r="1.2" fill="#fff"/></svg>
         </div>
-        <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:10px 16px;min-width:84px;color:#ffd54f;">
-          <div style="font-size:10px;color:#d4a017;">কয়েন</div>
-          <div style="font-size:20px;font-weight:700;" id="finalCoins">0</div>
+        <h1 style="font-size:26px;font-weight:700;margin-bottom:4px;">টার্বো হাইওয়ে 3D</h1>
+        <p style="font-size:13px;color:#94a3b8;margin-bottom:16px;">সুন্দর পাহাড়ি পরিবেশে 3D গাড়ির গেম</p>
+        <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;font-size:12px;color:#cbd5e1;text-align:left;line-height:1.9;margin-bottom:18px;">
+          <div>◀ ▶ বাটন / ← → কী = স্টিয়ারিং</div>
+          <div>GO বাটন / ↑ বা স্পেস ধরে রাখুন = গতি বাড়বে</div>
+          <div>লাল বাটন / ↓ = ব্রেক</div>
+          <div style="color:#ffd54f;">সোনালি কয়েন সংগ্রহ করুন, বাধা এড়িয়ে চলুন!</div>
         </div>
+        <button id="startBtn" class="ctl-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:17px;font-weight:700;padding:12px 36px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(34,197,94,.4);cursor:pointer;">শুরু করুন</button>
       </div>
-      <div style="font-size:14px;color:#cbd5e1;margin-bottom:4px;">মোট স্কোর: <span id="finalScore" style="font-weight:700;color:#fff;">0</span></div>
-      <div style="font-size:12px;color:#94a3b8;margin-bottom:18px;">সেরা স্কোর: <span id="bestScore" style="font-weight:600;color:#7dd3fc;">0</span></div>
-      <button id="restartBtn" class="ctl-btn" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;font-size:16px;font-weight:700;padding:12px 32px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(14,165,233,.4);cursor:pointer;">আবার খেলুন</button>
+      <div id="overPanel" style="text-align:center;color:#fff;padding:24px;max-width:320px;display:none;">
+        <div style="width:64px;height:64px;margin:0 auto 14px;border-radius:18px;background:linear-gradient(135deg,#ef4444,#b91c1c);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(239,68,68,.45);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        </div>
+        <h1 style="font-size:24px;font-weight:700;margin-bottom:6px;">দুর্ঘটনা হয়েছে!</h1>
+        <div style="display:flex;gap:10px;justify-content:center;margin:14px 0;">
+          <div style="background:rgba(255,255,255,.07);border-radius:12px;padding:10px 16px;min-width:84px;">
+            <div style="font-size:10px;color:#94a3b8;">দূরত্ব</div>
+            <div style="font-size:20px;font-weight:700;" id="finalDist">0 m</div>
+          </div>
+          <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:10px 16px;min-width:84px;color:#ffd54f;">
+            <div style="font-size:10px;color:#d4a017;">কয়েন</div>
+            <div style="font-size:20px;font-weight:700;" id="finalCoins">0</div>
+          </div>
+        </div>
+        <div style="font-size:14px;color:#cbd5e1;margin-bottom:4px;">মোট স্কোর: <span id="finalScore" style="font-weight:700;color:#fff;">0</span></div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:18px;">সেরা স্কোর: <span id="bestScore" style="font-weight:600;color:#7dd3fc;">0</span></div>
+        <button id="restartBtn" class="ctl-btn" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;font-size:16px;font-weight:700;padding:12px 32px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(14,165,233,.4);cursor:pointer;">আবার খেলুন</button>
+      </div>
     </div>
   </div>
 
   <!-- touch control bar -->
-  <div id="controlBar" style="position:absolute;bottom:0;left:0;right:0;height:92px;background:rgba(13,27,42,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);box-sizing:border-box;padding:0 10px;z-index:6;">
+  <div id="controlBar" style="height:92px;width:100%;background:linear-gradient(180deg,#0d1b2a,#0a1420);display:flex;align-items:center;justify-content:space-around;border-top:1px solid rgba(255,255,255,.08);box-sizing:border-box;padding:0 10px;flex-shrink:0;">
     <button id="btnLeft" class="ctl-btn" style="width:60px;height:60px;border-radius:50%;background:#1e3a5f;border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M15 5l-7 7 7 7z"/></svg>
     </button>
@@ -108,11 +110,10 @@
   // sizing
   var W=0,H=0;
   function sizeIt(){
-    W=window.innerWidth||document.documentElement.clientWidth||wrap.clientWidth;
-    H=window.innerHeight||document.documentElement.clientHeight||wrap.clientHeight;
-    wrap.style.width=W+'px';
-    wrap.style.height=H+'px';
-    host.style.width=W+'px';
+    W=window.innerWidth;
+    var wrapH=window.innerHeight-92;
+    wrap.style.height=wrapH+'px';
+    H=wrapH;
     host.style.height=H+'px';
     if(rdr){rdr.setSize(W,H);cam.aspect=W/H;cam.updateProjectionMatrix();}
   }
@@ -267,7 +268,7 @@
     state='over';shake=0.7;
     for(var i=0;i<particles.length;i++){var p=particles[i];p.life=rand(.6,1.4);p.vx=rand(-4,4);p.vy=rand(2,7);p.vz=rand(-3,3);p.m.position.set(carX+rand(-.5,.5),rand(.5,1.2),rand(-1,1));p.m.visible=true;}
     var score=Math.round(dist)+coins*25;
-    if(score>best){best=score;try{localStorage.getItem('turbo3d_best',String(best));}catch(e){}}
+    if(score>best){best=score;try{localStorage.setItem('turbo3d_best',String(best));}catch(e){}}
     setTimeout(function(){
       document.getElementById('finalDist').textContent=Math.round(dist)+' m';
       document.getElementById('finalCoins').textContent=coins;
