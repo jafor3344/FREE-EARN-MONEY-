@@ -22,11 +22,11 @@
     <!-- HUD -->
     <div style="position:absolute;top:10px;left:0;right:0;display:flex;gap:6px;padding:0 10px;z-index:5;pointer-events:none;">
       <div style="flex:1;background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 10px;color:#fff;">
-        <div style="font-size:10px;letter-spacing:.1em;color:#7dd3fc;font-weight:600;" id="levelTitle">level1/20</div>
+        <div style="font-size:10px;letter-spacing:.1em;color:#7dd3fc;font-weight:600;" id="levelTitle">Level 1 / 20</div>
         <div style="font-size:14px;font-weight:700;line-height:1.1;">Turbo Highway</div>
       </div>
       <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 10px;color:#fff;text-align:center;min-width:70px;">
-        <div style="font-size:9px;color:#94a3b8;font-weight:500;">speed</div>
+        <div style="font-size:9px;color:#94a3b8;font-weight:500;">Speed</div>
         <div style="font-size:16px;font-weight:700;line-height:1.1;"><span id="speedVal">0</span></div>
       </div>
       <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:6px 10px;color:#fff;text-align:center;min-width:70px;">
@@ -34,7 +34,7 @@
         <div style="font-size:16px;font-weight:700;line-height:1.1;"><span id="distVal">0</span>m</div>
       </div>
       <div style="background:rgba(10,25,40,.55);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:6px 10px;color:#ffd54f;text-align:center;min-width:50px;">
-        <div style="font-size:9px;color:#d4a017;font-weight:500;">coin</div>
+        <div style="font-size:9px;color:#d4a017;font-weight:500;">Coins</div>
         <div style="font-size:16px;font-weight:700;line-height:1.1;" id="coinVal">0</div>
       </div>
     </div>
@@ -45,33 +45,33 @@
         <div style="width:60px;height:60px;margin:0 auto 12px;border-radius:16px;background:linear-gradient(135deg,#0ea5e9,#2563eb);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(37,99,235,.45);">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M5 17h14M6 17l1.5-5h9L18 17M7 14h10M8 17v2M16 17v2"/><circle cx="8" cy="17" r="1.2" fill="#fff"/><circle cx="16" cy="17" r="1.2" fill="#fff"/></svg>
         </div>
-        <h1 style="font-size:24px;font-weight:700;margin-bottom:4px;">টার্বো হাইওয়ে 3D</h1>
-        <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">২০টি রোমাঞ্চকর লেভেল ও আঁকাবাঁকা রাস্তা!</p>
+        <h1 style="font-size:24px;font-weight:700;margin-bottom:4px;">Turbo Highway 3D</h1>
+        <p style="font-size:12px;color:#94a3b8;margin-bottom:12px;">20 Exciting Levels & Dynamic Tracks!</p>
         <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;font-size:11px;color:#cbd5e1;text-align:left;line-height:1.7;margin-bottom:14px;">
-          <div>🎯 বর্তমান লেভেল: <span id="currentLevelText" style="color:#7dd3fc;font-weight:700;">১</span> / ২০</div>
-          <div>◀ ▶ বাটন / ← → = স্টিয়ারিং ও ক্যামেরা ঘুরবে না</div>
-          <div> / ↑ = গতি বাড়ান | লাল বাটন = ব্রেক</div>
-          <div style="color:#ffd54f;">রাস্তার পাশে দৈত্য মেয়ে ও বাধা এড়িয়ে চলুন!</div>
+          <div>🎯 Current Level: <span id="currentLevelText" style="color:#7dd3fc;font-weight:700;">1</span> / 20</div>
+          <div>◀ ▶ Buttons / ← → = Steering</div>
+          <div>Green Button / ↑ = Accelerate | Red = Brake</div>
+          <div style="color:#ffd54f;">Avoid giant girls and obstacles!</div>
         </div>
-        <button id="startBtn" class="ctl-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:10px 32px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(34,197,94,.4);cursor:pointer;">খেলা শুরু করুন</button>
+        <button id="startBtn" class="ctl-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:16px;font-weight:700;padding:10px 32px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(34,197,94,.4);cursor:pointer;">Start Game</button>
       </div>
 
       <div id="overPanel" style="text-align:center;color:#fff;padding:20px;max-width:320px;display:none;">
         <div id="overIcon" style="width:60px;height:60px;margin:0 auto 12px;border-radius:16px;background:linear-gradient(135deg,#ef4444,#b91c1c);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(239,68,68,.45);">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
         </div>
-        <h1 id="overTitle" style="font-size:22px;font-weight:700;margin-bottom:6px;">দুর্ঘটনা হয়েছে!</h1>
+        <h1 id="overTitle" style="font-size:22px;font-weight:700;margin-bottom:6px;">Crash!</h1>
         <div style="display:flex;gap:8px;justify-content:center;margin:12px 0;">
           <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:8px 12px;min-width:75px;">
-            <div style="font-size:9px;color:#94a3b8;">দূরত্ব</div>
+            <div style="font-size:9px;color:#94a3b8;">Distance</div>
             <div style="font-size:16px;font-weight:700;" id="finalDist">0 m</div>
           </div>
           <div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);border-radius:10px;padding:8px 12px;min-width:75px;color:#ffd54f;">
-            <div style="font-size:9px;color:#d4a017;">কয়েন</div>
+            <div style="font-size:9px;color:#d4a017;">Coins</div>
             <div style="font-size:16px;font-weight:700;" id="finalCoins">0</div>
           </div>
         </div>
-        <button id="restartBtn" class="ctl-btn" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;font-size:15px;font-weight:700;padding:10px 28px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(14,165,233,.4);cursor:pointer;">পুনরায় চেষ্টা করুন</button>
+        <button id="restartBtn" class="ctl-btn" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;font-size:15px;font-weight:700;padding:10px 28px;border-radius:30px;border:none;box-shadow:0 6px 20px rgba(14,165,233,.4);cursor:pointer;">Try Again</button>
       </div>
     </div>
   </div>
@@ -87,7 +87,7 @@
     <button id="btnBrake" class="ctl-btn" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#b91c1c);border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;box-shadow:0 4px 14px rgba(239,68,68,.35);">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M6 9l6 7 6-7z"/></svg>
     </button>
-    <button id="btn" class="ctl-btn" style="width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#15803d);border:3px solid rgba(255,255,255,.25);color:#fff;font-size:20px;font-weight:700;cursor:pointer;padding:0;box-shadow:0 6px 20px rgba(34,197,94,.4);">GO</button>
+    <button id="btnGo" class="ctl-btn" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#15803d);border:3px solid rgba(255,255,255,.25);cursor:pointer;padding:0;box-shadow:0 6px 20px rgba(34,197,94,.4);"></button>
   </div>
 </div>
 
@@ -120,7 +120,7 @@
   }
 
   if(typeof THREE==='undefined'){
-    var n=0;var iv=setInterval(function(){n++;if(typeof THREE!=='undefined'){clearInterval(iv);init();}else if(n>40){clearInterval(iv);host.innerHTML='<div style="color:#fff;padding:40px;text-align:center;">3D লাইব্রেরি লোড হয়নি। আবার চেষ্টা করুন।</div>';}},250);
+    var n=0;var iv=setInterval(function(){n++;if(typeof THREE!=='undefined'){clearInterval(iv);init();}else if(n>40){clearInterval(iv);host.innerHTML='<div style="color:#fff;padding:40px;text-align:center;">3D Library failed to load.</div>';}},250);
     return;
   }
 
@@ -320,7 +320,7 @@
     finishArch.position.set(0,0,-9999);
     obstacles.forEach(function(o){o.active=false;o.g.visible=false;});
     coinsArr.forEach(function(c){c.active=false;c.m.visible=false;});
-    levelTitle.textContent="লেভেল "+currentLevel+" / "+maxLevel;
+    levelTitle.textContent="Level "+currentLevel+" / "+maxLevel;
     currentLevelText.textContent=currentLevel;
     overlay.style.display='none';
   }
@@ -346,13 +346,13 @@
   function showEndPanel(isWin, isNextLevel){
     setTimeout(function(){
       if(isWin){
-        overTitle.textContent = isNextLevel ? "লেভেল সম্পন্ন! পরবর্তী লেভেলে যান" : "অভিনন্দন! গেম শেষ করেছেন!";
+        overTitle.textContent = isNextLevel ? "Level Complete! Next Level" : "Congratulations! Game Completed!";
         overIcon.style.background = "linear-gradient(135deg,#22c55e,#16a34a)";
-        document.getElementById('restartBtn').textContent = isNextLevel ? "পরবর্তী লেভেল খেলুন" : "আবার শুরু করুন";
+        document.getElementById('restartBtn').textContent = isNextLevel ? "Play Next Level" : "Play Again";
       } else {
-        overTitle.textContent = "দুর্ঘটনা হয়েছে!";
+        overTitle.textContent = "Crash!";
         overIcon.style.background = "linear-gradient(135deg,#ef4444,#b91c1c)";
-        document.getElementById('restartBtn').textContent = "পুনরায় চেষ্টা করুন";
+        document.getElementById('restartBtn').textContent = "Try Again";
       }
       document.getElementById('finalDist').textContent=Math.round(dist)+' m';
       document.getElementById('finalCoins').textContent=coins;
@@ -404,7 +404,7 @@
 
     if(state==='playing'){
       playTime += dt;
-      var targetDist = 300 + currentLevel * 100; // লেভেল বাড়লে দূরত্ব বাড়বে
+      var targetDist = 300 + currentLevel * 100;
       if(dist >= targetDist && !finishSpawned){
         finishSpawned = true;
         finishZ = -180;
@@ -461,7 +461,6 @@
       dg.obj.group.rotation.y = Math.sin(clock * 3 + dg.obj.offset) * 0.15;
     }
 
-    // Obstacles movement (Traffic cars keep moving forward even if player brakes)
     for(var i=0;i<obstacles.length;i++){
       var o=obstacles[i];
       if(!o.active)continue;
@@ -474,7 +473,7 @@
     for(var i=0;i<coinsArr.length;i++){
       var c=coinsArr[i];if(!c.active)continue;
       c.m.position.z+=worldSpeed*dt;c.m.rotation.z+=dt*4;
-      c.m.position.y=0.9+Math.sin(clock*3+c.phase)*0.12 + Math.sin(c.m.position.z*0.1)*0.3; // উঁচু-নিচু রাস্তা এফেক্ট
+      c.m.position.y=0.9+Math.sin(clock*3+c.phase)*0.12 + Math.sin(c.m.position.z*0.1)*0.3;
       if(c.m.position.z>14){c.active=false;c.m.visible=false;continue;}
       if(state==='playing'&&Math.abs(c.m.position.z)<1.8&&Math.abs(c.x-carX)<1.35){
         c.active=false;c.m.visible=false;coins++;
@@ -485,18 +484,18 @@
     for(var i=0;i<particles.length;i++){var p=particles[i];if(p.life<=0)continue;p.life-=dt;p.vy-=9*dt;p.m.position.x+=p.vx*dt;p.m.position.y+=p.vy*dt;p.m.position.z+=p.vz*dt;p.m.rotation.x+=dt*5;p.m.rotation.y+=dt*4;if(p.life<=0||p.m.position.y<0)p.m.visible=false;}
 
     car.position.x=carX;
-    car.rotation.z=-steer*0.28 + roadCurve*0.1;
-    car.position.y = Math.sin(clock*12)*0.02*(worldSpeed/40) + Math.sin(dist*0.05)*0.08; // উঁচু-নিচু ঝাঁকুনি
+    car.rotation.z=-steer*0.28;
+    car.position.y = Math.sin(clock*12)*0.02*(worldSpeed/40) + Math.sin(dist*0.05)*0.08;
     for(var i=0;i<wheels.length;i++)wheels[i].rotation.y+=worldSpeed*dt/0.36;
 
-    // Fixed camera aligned directly behind the car, turning smoothly along with steering & road curves
+    // Fixed camera completely stable right behind the car
     var fov=62+(worldSpeed/85)*9;
     if(Math.abs(fov-cam.fov)>0.3){cam.fov=fov;cam.updateProjectionMatrix();}
     var shx=0,shy=0;
     if(shake>0){shake-=dt;shx=rand(-1,1)*shake*0.5;shy=rand(-1,1)*shake*0.3;}
     
-    cam.position.set(carX*0.6 + roadCurve*2 + shx, 4.3 + shy, 8.6);
-    cam.lookAt(carX*0.4, 1.4, -8);
+    cam.position.set(carX*0.35 + shx, 4.3 + shy, 8.6);
+    cam.lookAt(carX*0.55, 1.4, -8);
 
     speedVal.textContent=Math.round(worldSpeed*2.4);
     distVal.textContent=Math.round(dist);
